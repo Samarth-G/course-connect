@@ -6,5 +6,5 @@ export async function connectDB() {
   const mongoUri = process.env.MONGODB_URI || DEFAULT_MONGODB_URI;
 
   await mongoose.connect(mongoUri);
-  console.log(`MongoDB connected: ${mongoUri}`);
+  console.log("MongoDB connected");
 }
