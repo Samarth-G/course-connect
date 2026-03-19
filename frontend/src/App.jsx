@@ -2,6 +2,7 @@ import Header from './components/Header'
 import Footer from './components/Footer'
 import CourseCard from './components/CourseCard'
 import Sidebar from './components/Sidebar'
+import ThreadForm from './components/ThreadForm'
 
 const sampleCourses = [
   { code: 'COSC 222', title: 'Data Structures', description: 'Introduction to data structures.' },
@@ -25,6 +26,8 @@ function App() {
               <CourseCard key={c.code} code={c.code} title={c.title} description={c.description} />
             ))}
           </div>
+          <hr style={{ margin: '40px 0' }} />
+          <ThreadForm />
         </main>
       </div>
       <Footer />
