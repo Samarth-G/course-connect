@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-export default function ThreadForm() {
+export default function ThreadForm({ token }) {
   const [formData, setFormData] = useState({
     course: '',
     threadname: '',
@@ -25,7 +25,9 @@ export default function ThreadForm() {
     setResponse(null)
 
     try {
-      const { course, threadname, body } = formData
+      const course = formData.course.trim()
+      const threadname = formData.threadname.trim()
+      const body = formData.body.trim()
 
       if (!course || !threadname || !body) {
         setError('All fields are required')
@@ -33,13 +35,15 @@ export default function ThreadForm() {
         return
       }
 
-      const res = await fetch(`/api/courses/${course}/threads`, {
+      const res = await fetch(`/api/courses/${encodeURIComponent(course)}/threads`, {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
           title: threadname,
           body: body,
-          authorId: 'placeholder-user-id',
           tags: []
         })
       })
@@ -56,7 +60,7 @@ export default function ThreadForm() {
         })
       }
     } catch (err) {
-      setError(err.message)
+      setError(err.message || 'Unexpected network error')
     } finally {
       setLoading(false)
     }
