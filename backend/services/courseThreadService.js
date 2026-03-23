@@ -1,35 +1,77 @@
 import Thread from "../models/threadModel.js";
-import fs from "node:fs/promises";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const THREAD_DATA_FILE = path.join(__dirname, "..", "data", "threads.json");
 
 export async function saveCourseThread(threadData) {
   const createdThread = await Thread.create(threadData);
   return createdThread.toJSON();
 }
 
-export async function searchCourseThreadsFromJson(courseId, searchTerm = "") {
-  const fileContent = await fs.readFile(THREAD_DATA_FILE, "utf8");
-  const threads = JSON.parse(fileContent);
+function escapeRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+export async function searchCourseThreadsFromDb(courseId, searchTerm = "", options = {}) {
+  const { page = 1, limit = 20 } = options;
 
   const normalizedCourseId = String(courseId).trim().toLowerCase();
   const normalizedSearchTerm = String(searchTerm).trim().toLowerCase();
+  const skip = (page - 1) * limit;
 
-  const threadsInCourse = threads.filter((thread) =>
-    String(thread.courseId).trim().toLowerCase() === normalizedCourseId,
-  );
+  const query = {
+    courseId: { $regex: `^${escapeRegex(normalizedCourseId)}$`, $options: "i" },
+  };
 
-  if (!normalizedSearchTerm) {
-    return threadsInCourse;
+  if (normalizedSearchTerm) {
+    const safeSearch = escapeRegex(normalizedSearchTerm);
+    query.$or = [
+      { title: { $regex: safeSearch, $options: "i" } },
+      { body: { $regex: safeSearch, $options: "i" } },
+    ];
   }
 
-  return threadsInCourse.filter((thread) => {
-    const title = String(thread.title ?? "").toLowerCase();
-    const body = String(thread.body ?? "").toLowerCase();
-    return title.includes(normalizedSearchTerm) || body.includes(normalizedSearchTerm);
+  const [results, total] = await Promise.all([
+    Thread.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
+    Thread.countDocuments(query),
+  ]);
+
+  return {
+    results: results.map((thread) => thread.toJSON()),
+    total,
+    page,
+    limit,
+    totalPages: Math.max(1, Math.ceil(total / limit)),
+  };
+}
+
+export async function getCourseThreadById(courseId, threadId) {
+  const thread = await Thread.findOne({
+    _id: threadId,
+    courseId: { $regex: `^${escapeRegex(String(courseId).trim())}$`, $options: "i" },
   });
+
+  return thread ? thread.toJSON() : null;
+}
+
+export async function updateCourseThreadById(courseId, threadId, updateData) {
+  const updated = await Thread.findOneAndUpdate(
+    {
+      _id: threadId,
+      courseId: { $regex: `^${escapeRegex(String(courseId).trim())}$`, $options: "i" },
+    },
+    updateData,
+    { new: true, runValidators: true },
+  );
+
+  return updated ? updated.toJSON() : null;
+}
+
+export async function deleteCourseThreadById(courseId, threadId) {
+  const deleted = await Thread.findOneAndDelete({
+    _id: threadId,
+    courseId: { $regex: `^${escapeRegex(String(courseId).trim())}$`, $options: "i" },
+  });
+
+  return Boolean(deleted);
 }
