@@ -1,0 +1,82 @@
+[
+  {
+    "id": "t-001",
+    "courseId": "COSC-222",
+    "title": "Need help studying for MT1",
+    "body": "What chapters should I prioritize for the first midterm?",
+    "author": "Alex",
+    "createdAt": "2026-03-01T14:30:00.000Z"
+  },
+  {
+    "id": "t-002",
+    "courseId": "COSC-222",
+    "title": "DFS has me confused",
+    "body": "Can someone explain DFS recursively versus iteratively?",
+    "author": "Priya",
+    "createdAt": "2026-03-02T09:10:00.000Z"
+  },
+  {
+    "id": "t-003",
+    "courseId": "COSC-222",
+    "title": "Pseudocode formatting question",
+    "body": "How detailed should pseudocode be for assignment 2?",
+    "author": "Jordan",
+    "createdAt": "2026-03-04T18:20:00.000Z"
+  },
+  {
+    "id": "t-004",
+    "courseId": "COSC-222",
+    "title": "Big O cheat sheet",
+    "body": "Does anyone have a quick reference for common complexities?",
+    "author": "Maya",
+    "createdAt": "2026-03-05T12:40:00.000Z"
+  },
+  {
+    "id": "t-005",
+    "courseId": "BIOL-117",
+    "title": "Natural selection practice",
+    "body": "Looking for extra questions on natural selection and adaptation.",
+    "author": "Chris",
+    "createdAt": "2026-03-06T16:05:00.000Z"
+  },
+  {
+    "id": "t-006",
+    "courseId": "BIOL-117",
+    "title": "Lab report citation style",
+    "body": "Are we using APA or CSE in the next lab report?",
+    "author": "Taylor",
+    "createdAt": "2026-03-07T11:15:00.000Z"
+  },
+  {
+    "id": "t-007",
+    "courseId": "BIOL-117",
+    "title": "Genetics review session",
+    "body": "Anyone interested in a study group before the quiz?",
+    "author": "Sam",
+    "createdAt": "2026-03-08T19:55:00.000Z"
+  },
+  {
+    "id": "t-008",
+    "courseId": "COMM-105",
+    "title": "Case study prep tips",
+    "body": "How are you structuring your analysis for the case write-up?",
+    "author": "Lee",
+    "createdAt": "2026-03-10T08:45:00.000Z"
+  },
+  {
+    "id": "t-009",
+    "courseId": "COMM-105",
+    "title": "Presentation rubric clarity",
+    "body": "Can someone break down what the TA means by narrative flow?",
+    "author": "Nina",
+    "createdAt": "2026-03-12T10:25:00.000Z"
+  },
+  {
+    "id": "t-010",
+    "courseId": "COMM-105",
+    "title": "Team contract examples",
+    "body": "Any examples of good team contracts from previous terms?",
+    "author": "Owen",
+    "createdAt": "2026-03-14T13:35:00.000Z"
+  }
+]

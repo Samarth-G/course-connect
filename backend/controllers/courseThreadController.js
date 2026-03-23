@@ -1,4 +1,31 @@
-import { saveCourseThread } from "../services/courseThreadService.js";
+import {
+  saveCourseThread,
+  searchCourseThreadsFromJson,
+} from "../services/courseThreadService.js";
+
+export async function searchCourseThreads(req, res) {
+  const { courseId } = req.params;
+  const { q = "" } = req.query;
+
+  if (typeof q !== "string") {
+    return res.status(400).json({
+      error: "q must be a string",
+    });
+  }
+
+  try {
+    const results = await searchCourseThreadsFromJson(courseId, q);
+    return res.status(200).json({
+      query: q,
+      count: results.length,
+      results,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      error: "Failed to search threads",
+    });
+  }
+}
 
 export async function createCourseThread(req, res) {
   const { courseId } = req.params;
