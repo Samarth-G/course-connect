@@ -10,19 +10,23 @@ Built with the MERN stack (MongoDB, Express, React, Node.js) for COSC 360.
 
 ## Getting Started
 
+Start the backend and frontend in separate terminals.
+
 ### Frontend
 ```bash
-cd client
+cd frontend
 npm install
 npm run dev
 ```
 
 ### Backend
 ```bash
-cd server
+cd backend
 npm install
 npm run dev
 ```
+
+Backend defaults to `http://localhost:5000` and frontend dev server defaults to `http://localhost:5173`.
 
 ## Features
 - Browse courses and discussion threads
