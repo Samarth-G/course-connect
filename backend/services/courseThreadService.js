@@ -61,7 +61,7 @@ export async function updateCourseThreadById(courseId, threadId, updateData) {
       courseId: { $regex: `^${escapeRegex(String(courseId).trim())}$`, $options: "i" },
     },
     updateData,
-    { new: true, runValidators: true },
+    { returnDocument: "after", runValidators: true },
   );
 
   return updated ? updated.toJSON() : null;
