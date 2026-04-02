@@ -1,28 +1,48 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
-export default function ThreadForm({ token }) {
+const FALLBACK_COURSES = [
+  { code: 'COSC-222', title: 'COSC 222 - Data Structures' },
+  { code: 'BIOL-117', title: 'BIOL 117 - Evolutionary Biology' },
+  { code: 'COMM-105', title: 'COMM 105 - Business Fundamentals' },
+]
+
+export default function ThreadForm({ token, defaultCourse = FALLBACK_COURSES[0].code, courseOptions = FALLBACK_COURSES, onCreated }) {
   const [formData, setFormData] = useState({
-    course: '',
+    course: defaultCourse,
     threadname: '',
-    body: ''
+    body: '',
+    tags: '',
   })
   const [response, setResponse] = useState(null)
-  const [error, setError] = useState(null)
+  const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      course: defaultCourse,
+    }))
+  }, [defaultCourse])
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }))
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
-    setError(null)
+    setError('')
     setResponse(null)
+
+    if (!token) {
+      setError('Sign in to create a thread')
+      setLoading(false)
+      return
+    }
 
     try {
       const course = formData.course.trim()
@@ -31,7 +51,6 @@ export default function ThreadForm({ token }) {
 
       if (!course || !threadname || !body) {
         setError('All fields are required')
-        setLoading(false)
         return
       }
 
@@ -43,21 +62,32 @@ export default function ThreadForm({ token }) {
         },
         body: JSON.stringify({
           title: threadname,
-          body: body,
-          tags: []
-        })
+          body,
+          tags: formData.tags
+            ? formData.tags
+                .split(',')
+                .map((tag) => tag.trim())
+                .filter(Boolean)
+            : [],
+        }),
       })
 
       const data = await res.json()
       if (!res.ok) {
         setError(data.error || 'Failed to create thread')
-      } else {
-        setResponse(data)
-        setFormData({
-          course: '',
-          threadname: '',
-          body: ''
-        })
+        return
+      }
+
+      setResponse(data)
+      setFormData({
+        course: defaultCourse,
+        threadname: '',
+        body: '',
+        tags: '',
+      })
+
+      if (typeof onCreated === 'function') {
+        await onCreated(data.thread)
       }
     } catch (err) {
       setError(err.message || 'Unexpected network error')
@@ -67,29 +97,38 @@ export default function ThreadForm({ token }) {
   }
 
   return (
-    <div style={{ maxWidth: '600px', margin: '20px auto', padding: '20px' }}>
-      <h2>Create a New Thread</h2>
-      
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <section style={{ padding: '20px', borderRadius: '20px', border: '1px solid #e5e7eb', background: 'white' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
         <div>
-          <label htmlFor="course">Course:</label>
+          <p style={{ margin: 0, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '12px' }}>Compose</p>
+          <h2 style={{ margin: '6px 0 0' }}>Create a new thread</h2>
+        </div>
+        <small style={{ color: '#6b7280' }}>
+          Posting to: {defaultCourse}
+        </small>
+      </div>
+
+      <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '14px', marginTop: '18px' }}>
+        <div>
+          <label htmlFor="course">Course</label>
           <select
             id="course"
             name="course"
             value={formData.course}
             onChange={handleInputChange}
             required
-            style={{ width: '100%', padding: '8px', marginTop: '4px' }}
+            style={{ width: '100%', marginTop: '6px', padding: '12px', borderRadius: '12px', border: '1px solid #d1d5db' }}
           >
-            <option value="">Select a course</option>
-            <option value="COSC-222">COSC 222 - Data Structures</option>
-            <option value="BIOL-117">BIOL 117 - Evolutionary Biology</option>
-            <option value="COMM-105">COMM 105 - Business Fundamentals</option>
+            {courseOptions.map((course) => (
+              <option key={course.code} value={course.code}>
+                {course.title}
+              </option>
+            ))}
           </select>
         </div>
 
         <div>
-          <label htmlFor="threadname">Thread Name:</label>
+          <label htmlFor="threadname">Thread title</label>
           <input
             type="text"
             id="threadname"
@@ -98,12 +137,12 @@ export default function ThreadForm({ token }) {
             onChange={handleInputChange}
             placeholder="Enter thread title"
             required
-            style={{ width: '100%', padding: '8px', marginTop: '4px', boxSizing: 'border-box' }}
+            style={{ width: '100%', marginTop: '6px', padding: '12px', borderRadius: '12px', border: '1px solid #d1d5db' }}
           />
         </div>
 
         <div>
-          <label htmlFor="body">Body:</label>
+          <label htmlFor="body">Body</label>
           <textarea
             id="body"
             name="body"
@@ -111,48 +150,41 @@ export default function ThreadForm({ token }) {
             onChange={handleInputChange}
             placeholder="Enter your question or discussion"
             required
-            rows="8"
-            style={{ width: '100%', padding: '8px', marginTop: '4px', boxSizing: 'border-box' }}
+            rows="7"
+            style={{ width: '100%', marginTop: '6px', padding: '12px', borderRadius: '12px', border: '1px solid #d1d5db', resize: 'vertical' }}
           />
         </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            padding: '10px 16px',
-            backgroundColor: loading ? '#ccc' : '#007bff',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: loading ? 'not-allowed' : 'pointer',
-            fontSize: '16px'
-          }}
-        >
-          {loading ? 'Submitting...' : 'Submit Thread'}
+        <div>
+          <label htmlFor="tags">Tags</label>
+          <input
+            type="text"
+            id="tags"
+            name="tags"
+            value={formData.tags}
+            onChange={handleInputChange}
+            placeholder="exam, study group, assignment"
+            style={{ width: '100%', marginTop: '6px', padding: '12px', borderRadius: '12px', border: '1px solid #d1d5db' }}
+          />
+        </div>
+
+        <button type="submit" disabled={loading}>
+          {loading ? 'Submitting...' : 'Submit thread'}
         </button>
       </form>
 
-      {/* Display Error */}
       {error && (
-        <div style={{ marginTop: '20px', padding: '12px', backgroundColor: '#f8d7da', color: '#721c24', borderRadius: '4px' }}>
+        <div style={{ marginTop: '16px', padding: '12px', backgroundColor: '#fef2f2', color: '#991b1b', borderRadius: '12px' }}>
           <strong>Error:</strong> {error}
         </div>
       )}
 
-      {/* Display Success Response */}
       {response && (
-        <div style={{ marginTop: '20px', padding: '12px', backgroundColor: '#d4edda', color: '#155724', borderRadius: '4px' }}>
+        <div style={{ marginTop: '16px', padding: '12px', backgroundColor: '#ecfdf5', color: '#065f46', borderRadius: '12px' }}>
           <strong>Success!</strong>
-          <p>Thread created successfully!</p>
-          <details style={{ marginTop: '8px' }}>
-            <summary>View Response Details</summary>
-            <pre style={{ marginTop: '8px', backgroundColor: '#f5f5f5', padding: '8px', borderRadius: '4px', overflow: 'auto' }}>
-              {JSON.stringify(response, null, 2)}
-            </pre>
-          </details>
+          <p style={{ marginBottom: 0 }}>Thread created successfully.</p>
         </div>
       )}
-    </div>
+    </section>
   )
 }
