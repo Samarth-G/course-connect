@@ -8,7 +8,14 @@ const PORT = process.env.PORT || 5000;
 async function startServer() {
   try {
     await connectDB();
-    await seedDatabase();
+
+    const shouldSeed =
+      process.env.SEED_DATABASE === "true" ||
+      process.env.NODE_ENV !== "production";
+
+    if (shouldSeed) {
+      await seedDatabase();
+    }
     app.listen(PORT, () => {
       console.log(`Backend running on port ${PORT}`);
     });
