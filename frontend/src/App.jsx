@@ -364,9 +364,11 @@ function App() {
                   <p style={{ marginTop: 0, color: '#4b5563' }}>
                     Reads are public. Create, edit, and delete are enabled after login.
                   </p>
-                  <p style={{ color: '#6b7280', fontSize: '14px' }}>
-                    Demo account: demo@course-connect.local / Password123!
-                  </p>
+                  {process.env.NODE_ENV !== 'production' && (
+                    <p style={{ color: '#6b7280', fontSize: '14px' }}>
+                      Demo account: demo@course-connect.local / Password123!
+                    </p>
+                  )}
                 </div>
 
                 <div style={{ padding: '18px', borderRadius: '18px', border: '1px solid #e5e7eb', background: 'white' }}>
