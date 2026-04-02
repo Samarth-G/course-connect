@@ -1,10 +1,10 @@
 import express from "express";
 import {
-	deleteCourseThread,
-	createCourseThread,
-	getCourseThread,
-	searchCourseThreads,
-	updateCourseThread,
+  deleteCourseThread,
+  createCourseThread,
+  getCourseThread,
+  searchCourseThreads,
+  updateCourseThread,
 } from "../controllers/courseThreadController.js";
 import { requireAuth } from "../middleware/authMiddleware.js";
 
