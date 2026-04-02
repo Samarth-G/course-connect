@@ -22,6 +22,11 @@ const threadSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    authorName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
     tags: {
       type: [String],
       default: [],

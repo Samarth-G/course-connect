@@ -1,5 +1,8 @@
 import {
+  deleteCourseThreadById,
+  getCourseThreadById,
   saveCourseThread,
+  updateCourseThreadById,
   searchCourseThreadsFromDb,
 } from "../services/courseThreadService.js";
 
@@ -7,6 +10,63 @@ const TITLE_MAX_LENGTH = 200;
 const BODY_MAX_LENGTH = 5000;
 const TAG_MAX_LENGTH = 30;
 const TAGS_MAX_COUNT = 10;
+
+function normalizeTags(tags) {
+  return (Array.isArray(tags) ? tags : [])
+    .map((tag) => String(tag).trim())
+    .filter(Boolean)
+    .slice(0, TAGS_MAX_COUNT)
+    .map((tag) => tag.slice(0, TAG_MAX_LENGTH));
+}
+
+function buildThreadUpdatePayload(body) {
+  const payload = {};
+
+  if (body.title !== undefined) {
+    if (typeof body.title !== "string") {
+      return { error: "title must be a string" };
+    }
+
+    const normalTitle = body.title.trim();
+    if (!normalTitle) {
+      return { error: "title cannot be empty" };
+    }
+    if (normalTitle.length > TITLE_MAX_LENGTH) {
+      return { error: `title must be ${TITLE_MAX_LENGTH} characters or fewer` };
+    }
+
+    payload.title = normalTitle;
+  }
+
+  if (body.body !== undefined) {
+    if (typeof body.body !== "string") {
+      return { error: "body must be a string" };
+    }
+
+    const normalBody = body.body.trim();
+    if (!normalBody) {
+      return { error: "body cannot be empty" };
+    }
+    if (normalBody.length > BODY_MAX_LENGTH) {
+      return { error: `body must be ${BODY_MAX_LENGTH} characters or fewer` };
+    }
+
+    payload.body = normalBody;
+  }
+
+  if (body.tags !== undefined) {
+    if (!Array.isArray(body.tags)) {
+      return { error: "tags must be an array when provided" };
+    }
+
+    payload.tags = normalizeTags(body.tags);
+  }
+
+  if (Object.keys(payload).length === 0) {
+    return { error: "Provide at least one field to update" };
+  }
+  return { updatePayload: payload };
+}
 
 export async function searchCourseThreads(req, res) {
   const { courseId } = req.params;
@@ -86,18 +146,15 @@ export async function createCourseThread(req, res) {
     });
   }
 
-  const normalizedTags = (Array.isArray(tags) ? tags : [])
-    .map((tag) => String(tag).trim())
-    .filter(Boolean)
-    .slice(0, TAGS_MAX_COUNT)
-    .map((tag) => tag.slice(0, TAG_MAX_LENGTH));
-  
+  const normalizedTags = normalizeTags(tags);
+
   try {
     const newThread = await saveCourseThread({
       courseId: String(courseId).trim(),
       title: normalizedTitle,
       body: normalizedBody,
       authorId: normalizedAuthorId,
+      authorName: String(req.user?.name ?? "Anonymous").trim() || "Anonymous",
       tags: normalizedTags,
     });
 
@@ -111,6 +168,106 @@ export async function createCourseThread(req, res) {
   } catch (error) {
     return res.status(500).json({
       error: "Failed to save thread",
+    });
+  }
+}
+
+export async function getCourseThread(req, res) {
+  const { courseId, threadId } = req.params;
+
+  try {
+    const thread = await getCourseThreadById(courseId, threadId);
+
+    if (!thread) {
+      return res.status(404).json({
+        error: "Thread not found",
+      });
+    }
+
+    return res.status(200).json({ thread });
+  } catch (error) {
+    return res.status(500).json({
+      error: "Failed to fetch thread",
+    });
+  }
+}
+
+export async function updateCourseThread(req, res) {
+  const { courseId, threadId } = req.params;
+
+  try {
+    const existingThread = await getCourseThreadById(courseId, threadId);
+
+    if (!existingThread) {
+      return res.status(404).json({
+        error: "Thread not found",
+      });
+    }
+
+    if (existingThread.authorId !== String(req.user?.id ?? "")) {
+      return res.status(403).json({
+        error: "You can only edit your own threads",
+      });
+    }
+
+    const updateResult = buildThreadUpdatePayload(req.body ?? {});
+    if (updateResult.error) {
+      return res.status(400).json({
+        error: updateResult.error,
+      });
+    }
+
+    const updatedThread = await updateCourseThreadById(courseId, threadId, updateResult.updatePayload);
+
+    if (!updatedThread) {
+      return res.status(404).json({
+        error: "Thread not found",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Thread updated successfully",
+      thread: updatedThread,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      error: "Failed to update thread",
+    });
+  }
+}
+
+export async function deleteCourseThread(req, res) {
+  const { courseId, threadId } = req.params;
+
+  try {
+    const existingThread = await getCourseThreadById(courseId, threadId);
+
+    if (!existingThread) {
+      return res.status(404).json({
+        error: "Thread not found",
+      });
+    }
+
+    if (existingThread.authorId !== String(req.user?.id ?? "")) {
+      return res.status(403).json({
+        error: "You can only delete your own threads",
+      });
+    }
+
+    const deleted = await deleteCourseThreadById(courseId, threadId);
+
+    if (!deleted) {
+      return res.status(404).json({
+        error: "Thread not found",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Thread deleted successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      error: "Failed to delete thread",
     });
   }
 }
