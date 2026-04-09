@@ -79,6 +79,7 @@ function buildReplyPayload(body) {
   const normalizedBody = body.body.trim();
   const normalizedAuthorId = String(body.authorId ?? "").trim();
   const normalizedAuthorName = String(body.authorName ?? "Anonymous").trim() || "Anonymous";
+  const normalizedAuthorProfileImage = String(body.authorProfileImage ?? "");
 
   if (!normalizedBody) {
     return { error: "body cannot be empty" };
@@ -97,6 +98,7 @@ function buildReplyPayload(body) {
       body: normalizedBody,
       authorId: normalizedAuthorId,
       authorName: normalizedAuthorName,
+      authorProfileImage: normalizedAuthorProfileImage,
     },
   };
 }
@@ -210,6 +212,7 @@ export async function createCourseThread(req, res) {
       body: normalizedBody,
       authorId: normalizedAuthorId,
       authorName: String(req.user?.name ?? "Anonymous").trim() || "Anonymous",
+      authorProfileImage: String(req.user?.profileImage ?? ""),
       tags: normalizedTags,
     });
 
@@ -333,6 +336,7 @@ export async function addCourseThreadReply(req, res) {
     body: req.body?.body,
     authorId: req.user?.id,
     authorName: req.user?.name,
+    authorProfileImage: req.user?.profileImage,
   });
 
   if (replyPayloadResult.error) {

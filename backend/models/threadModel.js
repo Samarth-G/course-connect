@@ -17,6 +17,10 @@ const replySchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    authorProfileImage: {
+      type: String,
+      default: "",
+    },
   },
   {
     timestamps: { createdAt: true, updatedAt: false },
@@ -57,6 +61,10 @@ const threadSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+    },
+    authorProfileImage: {
+      type: String,
+      default: "",
     },
     tags: {
       type: [String],
