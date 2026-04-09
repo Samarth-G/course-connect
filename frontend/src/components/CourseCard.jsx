@@ -1,4 +1,4 @@
-function CourseCard({ code, title, description, onOpenDiscussion }) {
+function CourseCard({ code, title, description, onOpenDiscussion, onOpenResources }) {
   return (
     <article className="course-card">
       <div className="course-image-placeholder" aria-hidden="true">
@@ -11,7 +11,7 @@ function CourseCard({ code, title, description, onOpenDiscussion }) {
 
       <div className="course-actions">
         <button type="button" onClick={onOpenDiscussion}>Discussion</button>
-        <button type="button" onClick={onOpenDiscussion}>Resources</button>
+        <button type="button" onClick={onOpenResources}>Resources</button>
       </div>
     </article>
   )

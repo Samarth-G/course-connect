@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Header from './components/Header'
 import Footer from './components/Footer'
 import Sidebar from './components/Sidebar'
@@ -126,14 +126,14 @@ function App() {
 
   useEffect(() => {
     loadCourses('')
-  }, [])
+  }, [loadCourses])
 
   useEffect(() => {
     if (!selectedCourse) {
       return
     }
     loadThreads(selectedCourse, '')
-  }, [selectedCourse])
+  }, [selectedCourse, loadThreads])
 
   useEffect(() => {
     setActiveResourceId('')
@@ -146,7 +146,7 @@ function App() {
     setReplyLoading(false)
   }, [activeThreadId])
 
-  async function loadCourses(query = '') {
+  const loadCourses = useCallback(async (query = '') => {
     const trimmedQuery = query.trim()
     const searchParams = new URLSearchParams()
     if (trimmedQuery) {
@@ -181,9 +181,9 @@ function App() {
     } finally {
       setCoursesLoading(false)
     }
-  }
+  }, [])
 
-  async function loadThreads(courseId, query = '') {
+  const loadThreads = useCallback(async (courseId, query = '') => {
     const trimmedQuery = query.trim()
     const searchParams = new URLSearchParams()
 
@@ -222,7 +222,7 @@ function App() {
     } finally {
       setThreadsLoading(false)
     }
-  }
+  }, [])
 
   const handleAuthInputChange = (event) => {
     const { name, value } = event.target
@@ -341,8 +341,6 @@ function App() {
   }
 
   const activeCourse = courses.find((course) => course.id === selectedCourse) || courses[0] || null
-  const activeThread = threads.find((thread) => thread.id === activeThreadId) || null
-  const activeThreadReplies = Array.isArray(activeThread?.replies) ? activeThread.replies : []
 
   const filteredCourses = useMemo(() => {
     const normalized = courseSearch.trim().toLowerCase()
@@ -353,7 +351,7 @@ function App() {
       return (
         String(course.label || '').toLowerCase().includes(normalized) ||
         String(course.title || '').toLowerCase().includes(normalized) ||
-        course.description.toLowerCase().includes(normalized)
+        String(course.description || '').toLowerCase().includes(normalized)
       )
     })
   }, [courseSearch, courses])
@@ -369,6 +367,9 @@ function App() {
       return title.includes(normalized) || body.includes(normalized)
     })
   }, [threadSearch, threads])
+
+  const activeThread = visibleThreads.find((thread) => thread.id === activeThreadId) || null
+  const activeThreadReplies = Array.isArray(activeThread?.replies) ? activeThread.replies : []
 
   const visibleResources = useMemo(() => {
     const currentCourseId = String(selectedCourse || '').toUpperCase()
@@ -446,15 +447,16 @@ function App() {
               <div className="courses-header">
                 <h2>Courses</h2>
                 <label className="search-pill" htmlFor="course-search">
-                  <span className="search-icon">=</span>
+                  <span className="search-icon" aria-hidden="true">=</span>
                   <input
                     id="course-search"
                     type="search"
+                    aria-label="Find a course"
                     value={courseSearch}
                     onChange={(event) => setCourseSearch(event.target.value)}
                     placeholder="Find A Course (e.g. COSC 320)"
                   />
-                  <span className="search-icon">Q</span>
+                  <span className="search-icon" aria-hidden="true">Q</span>
                 </label>
               </div>
 
@@ -471,6 +473,10 @@ function App() {
                     onOpenDiscussion={() => {
                       setSelectedCourse(course.id)
                       setActivePage('threads')
+                    }}
+                    onOpenResources={() => {
+                      setSelectedCourse(course.id)
+                      setActivePage('resources')
                     }}
                   />
                 ))}

@@ -13,7 +13,7 @@ export async function addReplyToCourseThreadById(courseId, threadId, replyData) 
     },
     {
       $push: {
-        replies: replyData,
+        replies: { ...replyData, createdAt: new Date() },
       },
     },
     { returnDocument: "after", runValidators: true },
@@ -43,7 +43,7 @@ function toCourseDescription(latestBody = "") {
 export async function listCoursesFromDb(searchTerm = "") {
   const normalizedSearchTerm = String(searchTerm).trim().toUpperCase();
 
-  const groupedCourses = await Thread.aggregate([
+  const pipeline = [
     {
       $project: {
         courseIdUpper: { $toUpper: "$courseId" },
@@ -60,8 +60,21 @@ export async function listCoursesFromDb(searchTerm = "") {
         latestCreatedAt: { $first: "$createdAt" },
       },
     },
-    { $sort: { _id: 1 } },
-  ]);
+  ];
+
+  if (normalizedSearchTerm) {
+    pipeline.push({
+      $match: {
+        $or: [
+          { _id: { $regex: escapeRegex(normalizedSearchTerm), $options: "i" } },
+        ],
+      },
+    });
+  }
+
+  pipeline.push({ $sort: { _id: 1 } });
+
+  const groupedCourses = await Thread.aggregate(pipeline);
 
   const mappedCourses = groupedCourses
     .map((course) => {

@@ -20,7 +20,7 @@ function Sidebar({
           value={searchTerm}
           onChange={(event) => onSearchTermChange(event.target.value)}
         />
-        <span>Q</span>
+        <span aria-hidden="true">Q</span>
       </label>
 
       <div className="sidebar-subheading">{subheading}</div>
