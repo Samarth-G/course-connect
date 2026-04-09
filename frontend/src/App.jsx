@@ -3,6 +3,7 @@ import Header from './components/Header'
 import Footer from './components/Footer'
 import Sidebar from './components/Sidebar'
 import CourseCard from './components/CourseCard'
+import ThreadForm from './components/ThreadForm'
 import './App.css'
 
 const TOKEN_STORAGE_KEY = 'courseconnect_auth_token'
@@ -68,7 +69,7 @@ function App() {
   const [activePage, setActivePage] = useState('courses')
   const [authMode, setAuthMode] = useState('login')
   const [showAuthPanel, setShowAuthPanel] = useState(false)
-  const [authForm, setAuthForm] = useState({ name: '', email: '', password: '' })
+  const [authForm, setAuthForm] = useState({ name: '', email: '', password: '', confirmPassword: '', profileImage: null })
   const [authError, setAuthError] = useState('')
   const [authLoading, setAuthLoading] = useState(false)
   const [token, setToken] = useState(() => localStorage.getItem(TOKEN_STORAGE_KEY) || '')
@@ -90,6 +91,7 @@ function App() {
   const [replyText, setReplyText] = useState('')
   const [replyError, setReplyError] = useState('')
   const [replyLoading, setReplyLoading] = useState(false)
+  const [showNewThreadForm, setShowNewThreadForm] = useState(false)
 
   useEffect(() => {
     async function restoreSession() {
@@ -225,8 +227,12 @@ function App() {
   }
 
   const handleAuthInputChange = (event) => {
-    const { name, value } = event.target
-    setAuthForm((prev) => ({ ...prev, [name]: value }))
+    const { name, value, files } = event.target
+    if (name === 'profileImage') {
+      setAuthForm((prev) => ({ ...prev, profileImage: files[0] || null }))
+    } else {
+      setAuthForm((prev) => ({ ...prev, [name]: value }))
+    }
   }
 
   const handleAuthSubmit = async (event) => {
@@ -234,21 +240,36 @@ function App() {
     setAuthError('')
     setAuthLoading(true)
 
-    const payload = {
-      email: authForm.email.trim(),
-      password: authForm.password,
-    }
-
-    if (authMode === 'register') {
-      payload.name = authForm.name.trim()
+    if (authMode === 'register' && authForm.password !== authForm.confirmPassword) {
+      setAuthError('Passwords do not match')
+      setAuthLoading(false)
+      return
     }
 
     try {
-      const response = await fetch(`/api/auth/${authMode === 'login' ? 'login' : 'register'}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
+      let response
+
+      if (authMode === 'register') {
+        const formData = new FormData()
+        formData.append('name', authForm.name.trim())
+        formData.append('email', authForm.email.trim())
+        formData.append('password', authForm.password)
+        if (authForm.profileImage) {
+          formData.append('profileImage', authForm.profileImage)
+        }
+
+        response = await fetch('/api/auth/register', {
+          method: 'POST',
+          body: formData,
+        })
+      } else {
+        response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: authForm.email.trim(), password: authForm.password }),
+        })
+      }
+
       const data = await response.json()
 
       if (!response.ok) {
@@ -262,7 +283,7 @@ function App() {
 
       setToken(data.token || '')
       setUser(data.user || null)
-      setAuthForm({ name: '', email: '', password: '' })
+      setAuthForm({ name: '', email: '', password: '', confirmPassword: '', profileImage: null })
       setShowAuthPanel(false)
     } catch (error) {
       setAuthError(error.message || 'Unexpected network error')
@@ -497,9 +518,46 @@ function App() {
               }))}
               activeItemId={activeThreadId}
               onSelectItem={setActiveThreadId}
+              courses={courses}
+              selectedCourse={selectedCourse}
+              onSelectCourse={setSelectedCourse}
             />
 
             <section className="thread-stage">
+              <div className="thread-stage-toolbar">
+                <button
+                  type="button"
+                  className="new-thread-button"
+                  onClick={() => {
+                    if (!user || !token) {
+                      openAuth('login')
+                      return
+                    }
+                    setShowNewThreadForm((prev) => !prev)
+                  }}
+                >
+                  {showNewThreadForm ? '✕ Cancel' : '+ New Thread'}
+                </button>
+              </div>
+
+              {showNewThreadForm && (
+                <ThreadForm
+                  token={token}
+                  defaultCourse={selectedCourse}
+                  courseOptions={courses.map((c) => ({ code: c.id, title: c.label || c.id }))}
+                  onCreated={async (thread) => {
+                    setShowNewThreadForm(false)
+                    if (thread?.courseId) {
+                      setSelectedCourse(thread.courseId)
+                    }
+                    await loadThreads(thread?.courseId || selectedCourse, '')
+                    if (thread?.id) {
+                      setActiveThreadId(thread.id)
+                    }
+                  }}
+                />
+              )}
+
               {threadsLoading && <p className="panel-message">Loading discussions...</p>}
               {threadsError && <p className="panel-message panel-error">{threadsError}</p>}
 
@@ -516,9 +574,13 @@ function App() {
                   <div className="thread-detail-panel">
                     <div className="thread-detail-meta">
                       <div className="thread-detail-author">
-                        <span className="avatar-dot" aria-hidden="true">
-                          {(activeThread?.authorName || 'A').slice(0, 1).toUpperCase()}
-                        </span>
+                        {activeThread?.authorProfileImage ? (
+                          <img src={`/uploads/${activeThread.authorProfileImage}`} alt="" className="avatar-img" />
+                        ) : (
+                          <span className="avatar-dot" aria-hidden="true">
+                            {(activeThread?.authorName || 'A').slice(0, 1).toUpperCase()}
+                          </span>
+                        )}
                         <div>
                           <strong>{activeThread?.authorName || 'Anonymous'}</strong>
                           <p>{formatThreadDate(activeThread?.createdAt)}</p>
@@ -548,9 +610,13 @@ function App() {
 
                         {activeThreadReplies.map((reply) => (
                           <article className="thread-message thread-message-reply" key={reply.id}>
-                            <span className="avatar-dot avatar-dot-reply" aria-hidden="true">
-                              {(reply.authorName || 'A').slice(0, 1).toUpperCase()}
-                            </span>
+                            {reply.authorProfileImage ? (
+                              <img src={`/uploads/${reply.authorProfileImage}`} alt="" className="avatar-img avatar-img-reply" />
+                            ) : (
+                              <span className="avatar-dot avatar-dot-reply" aria-hidden="true">
+                                {(reply.authorName || 'A').slice(0, 1).toUpperCase()}
+                              </span>
+                            )}
 
                             <div className="thread-message-content">
                               <div className="thread-message-meta">
@@ -614,6 +680,9 @@ function App() {
               items={resourceSidebarItems}
               activeItemId={activeResource?.id || ''}
               onSelectItem={setActiveResourceId}
+              courses={courses}
+              selectedCourse={selectedCourse}
+              onSelectCourse={setSelectedCourse}
             />
 
             <section className="thread-stage resource-stage">
@@ -702,6 +771,29 @@ function App() {
                 onChange={handleAuthInputChange}
                 required
               />
+
+              {authMode === 'register' && (
+                <>
+                  <input
+                    type="password"
+                    name="confirmPassword"
+                    placeholder="Confirm Password"
+                    value={authForm.confirmPassword}
+                    onChange={handleAuthInputChange}
+                    required
+                  />
+                  <label className="file-upload-label" htmlFor="profile-image-upload">
+                    Profile Image (optional)
+                    <input
+                      id="profile-image-upload"
+                      type="file"
+                      name="profileImage"
+                      accept="image/png,image/jpeg,image/jpg,image/gif"
+                      onChange={handleAuthInputChange}
+                    />
+                  </label>
+                </>
+              )}
 
               {authError && <p className="panel-error">{authError}</p>}
 

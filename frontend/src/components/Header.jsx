@@ -1,5 +1,9 @@
 function Header({ user, activePage, onNavigate, onShowAuth, onLogout }) {
-  const showAuthButtons = !user && (activePage === 'threads' || activePage === 'resources')
+  const showAuthButtons = !user
+
+  const avatarUrl = user?.profileImage
+    ? `/uploads/${user.profileImage}`
+    : null
 
   return (
     <header className="topbar">
@@ -52,6 +56,11 @@ function Header({ user, activePage, onNavigate, onShowAuth, onLogout }) {
 
         {user && (
           <>
+            {avatarUrl ? (
+              <img src={avatarUrl} alt={user.name} className="header-avatar-img" />
+            ) : (
+              <span className="avatar-shell">{(user.name || 'U').slice(0, 1).toUpperCase()}</span>
+            )}
             <span className="user-name">{user.name}</span>
             <button type="button" className="auth-chip" onClick={onLogout}>
               Logout
