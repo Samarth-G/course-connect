@@ -1,6 +1,7 @@
 import {
   deleteCourseThreadById,
   getCourseThreadById,
+  listCoursesFromDb,
   saveCourseThread,
   updateCourseThreadById,
   searchCourseThreadsFromDb,
@@ -66,6 +67,28 @@ function buildThreadUpdatePayload(body) {
     return { error: "Provide at least one field to update" };
   }
   return { updatePayload: payload };
+}
+
+export async function listCourses(req, res) {
+  const { q = "" } = req.query;
+
+  if (typeof q !== "string") {
+    return res.status(400).json({
+      error: "q must be a string",
+    });
+  }
+
+  try {
+    const results = await listCoursesFromDb(q);
+    return res.status(200).json({
+      count: results.length,
+      results,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      error: "Failed to list courses",
+    });
+  }
 }
 
 export async function searchCourseThreads(req, res) {

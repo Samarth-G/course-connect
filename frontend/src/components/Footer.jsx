@@ -1,13 +1,14 @@
 function Footer() {
   return (
-    <footer style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', borderTop: '1px solid #eee' }}>
-      <div style={{ display: 'flex', gap: '12px' }}>
-        <span>𝕏</span>
-        <span>📷</span>
-        <span>▶</span>
+    <footer className="site-footer">
+      <div className="social-links" aria-label="Social">
+        <span>X</span>
+        <span>IG</span>
+        <span>YT</span>
         <span>in</span>
       </div>
-      <div style={{ display: 'flex', gap: '32px' }}>
+
+      <div className="footer-links">
         <a href="/about">About</a>
         <a href="/terms">Terms</a>
         <a href="/contact">Contact</a>
@@ -15,4 +16,5 @@ function Footer() {
     </footer>
   )
 }
+
 export default Footer

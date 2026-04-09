@@ -5,6 +5,78 @@ export async function saveCourseThread(threadData) {
   return createdThread.toJSON();
 }
 
+function toCourseLabel(courseId) {
+  return String(courseId || "")
+    .trim()
+    .toUpperCase()
+    .replace(/-/g, " ");
+}
+
+function toCourseDescription(latestBody = "") {
+  const normalized = String(latestBody).replace(/\s+/g, " ").trim();
+  if (!normalized) {
+    return "Latest discussion activity is available in this course.";
+  }
+  if (normalized.length <= 110) {
+    return normalized;
+  }
+  return `${normalized.slice(0, 107)}...`;
+}
+
+export async function listCoursesFromDb(searchTerm = "") {
+  const normalizedSearchTerm = String(searchTerm).trim().toUpperCase();
+
+  const groupedCourses = await Thread.aggregate([
+    {
+      $project: {
+        courseIdUpper: { $toUpper: "$courseId" },
+        body: 1,
+        createdAt: 1,
+      },
+    },
+    { $sort: { createdAt: -1 } },
+    {
+      $group: {
+        _id: "$courseIdUpper",
+        threadCount: { $sum: 1 },
+        latestBody: { $first: "$body" },
+        latestCreatedAt: { $first: "$createdAt" },
+      },
+    },
+    { $sort: { _id: 1 } },
+  ]);
+
+  const mappedCourses = groupedCourses
+    .map((course) => {
+      const id = String(course._id || "").trim();
+      if (!id) {
+        return null;
+      }
+
+      return {
+        id,
+        label: toCourseLabel(id),
+        title: toCourseLabel(id),
+        description: toCourseDescription(course.latestBody),
+        threadCount: Number(course.threadCount) || 0,
+        latestCreatedAt: course.latestCreatedAt || null,
+      };
+    })
+    .filter(Boolean);
+
+  if (!normalizedSearchTerm) {
+    return mappedCourses;
+  }
+
+  return mappedCourses.filter((course) => {
+    return (
+      course.id.includes(normalizedSearchTerm)
+      || course.label.includes(normalizedSearchTerm)
+      || course.description.toUpperCase().includes(normalizedSearchTerm)
+    );
+  });
+}
+
 function escapeRegex(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
