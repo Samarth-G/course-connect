@@ -1,22 +1,45 @@
-function Sidebar({ title, items, searchTerm, onSearchTermChange, onSearchSubmit }) {
+function Sidebar({
+  title,
+  items,
+  searchTerm,
+  onSearchTermChange,
+  activeItemId,
+  onSelectItem,
+  subheading = 'Chats',
+  searchInputId = 'thread-search',
+}) {
   return (
-    <div style={{ width: '160px', borderRight: '1px solid #eee', padding: '12px', minHeight: '100vh' }}>
-      <strong>☰ {title}</strong>
-      <form onSubmit={onSearchSubmit}>
+    <aside className="thread-sidebar">
+      <div className="sidebar-heading">= {title}</div>
+
+      <label className="sidebar-search" htmlFor={searchInputId}>
         <input
+          id={searchInputId}
           type="search"
           placeholder="Search"
           value={searchTerm}
-          onChange={(e) => onSearchTermChange(e.target.value)}
-          style={{ width: '100%', margin: '10px 0', padding: '4px' }}
+          onChange={(event) => onSearchTermChange(event.target.value)}
         />
-      </form>
-      <ul style={{ listStyle: 'none', padding: 0, fontSize: '14px' }}>
-        {items.map((item, i) => (
-          <li key={i} style={{ padding: '6px 0', cursor: 'pointer' }}>{item}</li>
+        <span>Q</span>
+      </label>
+
+      <div className="sidebar-subheading">{subheading}</div>
+
+      <ul className="sidebar-list">
+        {items.map((item) => (
+          <li key={item.id}>
+            <button
+              type="button"
+              className={item.id === activeItemId ? 'sidebar-item active' : 'sidebar-item'}
+              onClick={() => onSelectItem(item.id)}
+            >
+              {item.label}
+            </button>
+          </li>
         ))}
       </ul>
-    </div>
+    </aside>
   )
 }
+
 export default Sidebar
