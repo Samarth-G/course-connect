@@ -5,6 +5,23 @@ export async function saveCourseThread(threadData) {
   return createdThread.toJSON();
 }
 
+export async function addReplyToCourseThreadById(courseId, threadId, replyData) {
+  const updated = await Thread.findOneAndUpdate(
+    {
+      _id: threadId,
+      courseId: { $regex: `^${escapeRegex(String(courseId).trim())}$`, $options: "i" },
+    },
+    {
+      $push: {
+        replies: replyData,
+      },
+    },
+    { returnDocument: "after", runValidators: true },
+  );
+
+  return updated ? updated.toJSON() : null;
+}
+
 function toCourseLabel(courseId) {
   return String(courseId || "")
     .trim()

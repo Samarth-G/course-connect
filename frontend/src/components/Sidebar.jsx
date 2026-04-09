@@ -1,11 +1,20 @@
-function Sidebar({ title, items, searchTerm, onSearchTermChange, activeItemId, onSelectItem }) {
+function Sidebar({
+  title,
+  items,
+  searchTerm,
+  onSearchTermChange,
+  activeItemId,
+  onSelectItem,
+  subheading = 'Chats',
+  searchInputId = 'thread-search',
+}) {
   return (
     <aside className="thread-sidebar">
       <div className="sidebar-heading">= {title}</div>
 
-      <label className="sidebar-search" htmlFor="thread-search">
+      <label className="sidebar-search" htmlFor={searchInputId}>
         <input
-          id="thread-search"
+          id={searchInputId}
           type="search"
           placeholder="Search"
           value={searchTerm}
@@ -14,7 +23,7 @@ function Sidebar({ title, items, searchTerm, onSearchTermChange, activeItemId, o
         <span>Q</span>
       </label>
 
-      <div className="sidebar-subheading">Chats</div>
+      <div className="sidebar-subheading">{subheading}</div>
 
       <ul className="sidebar-list">
         {items.map((item) => (

@@ -1,5 +1,36 @@
 import mongoose from "mongoose";
 
+const replySchema = new mongoose.Schema(
+  {
+    body: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    authorId: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    authorName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+  },
+  {
+    timestamps: { createdAt: true, updatedAt: false },
+    versionKey: false,
+    toJSON: {
+      transform(_doc, ret) {
+        ret.id = ret._id.toString();
+        delete ret._id;
+        return ret;
+      },
+    },
+  }
+);
+
 const threadSchema = new mongoose.Schema(
   {
     courseId: {
@@ -29,6 +60,10 @@ const threadSchema = new mongoose.Schema(
     },
     tags: {
       type: [String],
+      default: [],
+    },
+    replies: {
+      type: [replySchema],
       default: [],
     },
   },

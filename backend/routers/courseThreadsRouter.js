@@ -1,5 +1,6 @@
 import express from "express";
 import {
+  addCourseThreadReply,
   deleteCourseThread,
   createCourseThread,
   getCourseThread,
@@ -13,6 +14,7 @@ const router = express.Router({ mergeParams: true });
 router.get("/", searchCourseThreads);
 router.get("/:threadId", getCourseThread);
 router.post("/", requireAuth, createCourseThread);
+router.post("/:threadId/replies", requireAuth, addCourseThreadReply);
 router.patch("/:threadId", requireAuth, updateCourseThread);
 router.delete("/:threadId", requireAuth, deleteCourseThread);
 

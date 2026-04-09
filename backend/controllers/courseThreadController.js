@@ -1,4 +1,5 @@
 import {
+  addReplyToCourseThreadById,
   deleteCourseThreadById,
   getCourseThreadById,
   listCoursesFromDb,
@@ -9,6 +10,7 @@ import {
 
 const TITLE_MAX_LENGTH = 200;
 const BODY_MAX_LENGTH = 5000;
+const REPLY_BODY_MAX_LENGTH = 2000;
 const TAG_MAX_LENGTH = 30;
 const TAGS_MAX_COUNT = 10;
 
@@ -67,6 +69,36 @@ function buildThreadUpdatePayload(body) {
     return { error: "Provide at least one field to update" };
   }
   return { updatePayload: payload };
+}
+
+function buildReplyPayload(body) {
+  if (typeof body.body !== "string") {
+    return { error: "body must be a string" };
+  }
+
+  const normalizedBody = body.body.trim();
+  const normalizedAuthorId = String(body.authorId ?? "").trim();
+  const normalizedAuthorName = String(body.authorName ?? "Anonymous").trim() || "Anonymous";
+
+  if (!normalizedBody) {
+    return { error: "body cannot be empty" };
+  }
+
+  if (normalizedBody.length > REPLY_BODY_MAX_LENGTH) {
+    return { error: `body must be ${REPLY_BODY_MAX_LENGTH} characters or fewer` };
+  }
+
+  if (!normalizedAuthorId) {
+    return { error: "Missing authenticated user" };
+  }
+
+  return {
+    replyPayload: {
+      body: normalizedBody,
+      authorId: normalizedAuthorId,
+      authorName: normalizedAuthorName,
+    },
+  };
 }
 
 export async function listCourses(req, res) {
@@ -291,6 +323,40 @@ export async function deleteCourseThread(req, res) {
   } catch (error) {
     return res.status(500).json({
       error: "Failed to delete thread",
+    });
+  }
+}
+
+export async function addCourseThreadReply(req, res) {
+  const { courseId, threadId } = req.params;
+  const replyPayloadResult = buildReplyPayload({
+    body: req.body?.body,
+    authorId: req.user?.id,
+    authorName: req.user?.name,
+  });
+
+  if (replyPayloadResult.error) {
+    return res.status(400).json({
+      error: replyPayloadResult.error,
+    });
+  }
+
+  try {
+    const updatedThread = await addReplyToCourseThreadById(courseId, threadId, replyPayloadResult.replyPayload);
+
+    if (!updatedThread) {
+      return res.status(404).json({
+        error: "Thread not found",
+      });
+    }
+
+    return res.status(201).json({
+      message: "Reply added successfully",
+      thread: updatedThread,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      error: "Failed to add reply",
     });
   }
 }

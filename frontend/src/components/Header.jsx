@@ -1,5 +1,5 @@
 function Header({ user, activePage, onNavigate, onShowAuth, onLogout }) {
-  const showAuthButtons = !user && activePage === 'threads'
+  const showAuthButtons = !user && (activePage === 'threads' || activePage === 'resources')
 
   return (
     <header className="topbar">
@@ -20,7 +20,14 @@ function Header({ user, activePage, onNavigate, onShowAuth, onLogout }) {
           className={activePage === 'threads' ? 'nav-chip active' : 'nav-chip'}
           onClick={() => onNavigate('threads')}
         >
-          Discussions/Resources
+          Discussions
+        </button>
+        <button
+          type="button"
+          className={activePage === 'resources' ? 'nav-chip active' : 'nav-chip'}
+          onClick={() => onNavigate('resources')}
+        >
+          Resources
         </button>
         <button
           type="button"

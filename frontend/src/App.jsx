@@ -7,6 +7,63 @@ import './App.css'
 
 const TOKEN_STORAGE_KEY = 'courseconnect_auth_token'
 
+const LOCAL_RESOURCES = [
+  {
+    id: 'cosc-222-slides-week-3',
+    courseId: 'COSC-222',
+    title: 'Week 3 Graph Algorithms Slides',
+    type: 'Slides',
+    summary: 'Traversal concepts, BFS vs DFS patterns, and complexity walk-throughs.',
+    uploader: 'Course Staff',
+    updatedAt: '2026-03-04T15:00:00.000Z',
+  },
+  {
+    id: 'cosc-222-midterm-guide',
+    courseId: 'COSC-222',
+    title: 'Midterm 1 Study Guide',
+    type: 'Study Guide',
+    summary: 'Practice topics and a checklist covering key graph and runtime questions.',
+    uploader: 'Student Mentor',
+    updatedAt: '2026-03-09T13:20:00.000Z',
+  },
+  {
+    id: 'biol-117-genetics-summary',
+    courseId: 'BIOL-117',
+    title: 'Genetics Summary Notes',
+    type: 'Notes',
+    summary: 'Condensed notes for dominant/recessive patterns and Punnett square examples.',
+    uploader: 'Course Staff',
+    updatedAt: '2026-03-10T16:45:00.000Z',
+  },
+  {
+    id: 'biol-117-lab-report-guide',
+    courseId: 'BIOL-117',
+    title: 'Lab Report Writing Guide',
+    type: 'Guide',
+    summary: 'Section-by-section expectations and citation format reminders for reports.',
+    uploader: 'TA Team',
+    updatedAt: '2026-03-11T11:10:00.000Z',
+  },
+  {
+    id: 'comm-105-case-template',
+    courseId: 'COMM-105',
+    title: 'Case Study Analysis Template',
+    type: 'Template',
+    summary: 'A reusable structure for issue framing, options, and recommendations.',
+    uploader: 'Course Staff',
+    updatedAt: '2026-03-13T09:30:00.000Z',
+  },
+  {
+    id: 'comm-105-presentation-checklist',
+    courseId: 'COMM-105',
+    title: 'Presentation Checklist',
+    type: 'Checklist',
+    summary: 'Narrative flow checkpoints and final slide polish reminders before presenting.',
+    uploader: 'Student Mentor',
+    updatedAt: '2026-03-15T18:00:00.000Z',
+  },
+]
+
 function App() {
   const [activePage, setActivePage] = useState('courses')
   const [authMode, setAuthMode] = useState('login')
@@ -24,10 +81,15 @@ function App() {
   const [selectedCourse, setSelectedCourse] = useState('')
   const [courseSearch, setCourseSearch] = useState('')
   const [threadSearch, setThreadSearch] = useState('')
+  const [resourceSearch, setResourceSearch] = useState('')
   const [threads, setThreads] = useState([])
   const [threadsLoading, setThreadsLoading] = useState(false)
   const [threadsError, setThreadsError] = useState('')
   const [activeThreadId, setActiveThreadId] = useState('')
+  const [activeResourceId, setActiveResourceId] = useState('')
+  const [replyText, setReplyText] = useState('')
+  const [replyError, setReplyError] = useState('')
+  const [replyLoading, setReplyLoading] = useState(false)
 
   useEffect(() => {
     async function restoreSession() {
@@ -72,6 +134,17 @@ function App() {
     }
     loadThreads(selectedCourse, '')
   }, [selectedCourse])
+
+  useEffect(() => {
+    setActiveResourceId('')
+    setResourceSearch('')
+  }, [selectedCourse])
+
+  useEffect(() => {
+    setReplyText('')
+    setReplyError('')
+    setReplyLoading(false)
+  }, [activeThreadId])
 
   async function loadCourses(query = '') {
     const trimmedQuery = query.trim()
@@ -204,8 +277,72 @@ function App() {
     setUser(null)
   }
 
+  const formatThreadDate = (value) => {
+    if (!value) {
+      return 'Recently'
+    }
+
+    const parsedDate = new Date(value)
+    if (Number.isNaN(parsedDate.getTime())) {
+      return 'Recently'
+    }
+
+    return parsedDate.toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })
+  }
+
+  const handleReplySubmit = async (event) => {
+    event.preventDefault()
+
+    if (!selectedCourse || !activeThread) {
+      return
+    }
+
+    if (!user || !token) {
+      setShowAuthPanel(true)
+      setAuthMode('login')
+      return
+    }
+
+    const trimmedReply = replyText.trim()
+    if (!trimmedReply) {
+      setReplyError('Reply cannot be empty')
+      return
+    }
+
+    setReplyLoading(true)
+    setReplyError('')
+
+    try {
+      const response = await fetch(`/api/courses/${encodeURIComponent(selectedCourse)}/threads/${encodeURIComponent(activeThread.id)}/replies`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ body: trimmedReply }),
+      })
+      const data = await response.json()
+
+      if (!response.ok) {
+        setReplyError(data.error || 'Failed to add reply')
+        return
+      }
+
+      const updatedThread = data.thread || null
+      if (updatedThread) {
+        setThreads((prevThreads) => prevThreads.map((thread) => (thread.id === updatedThread.id ? updatedThread : thread)))
+      }
+      setReplyText('')
+    } catch (error) {
+      setReplyError(error.message || 'Unexpected network error')
+    } finally {
+      setReplyLoading(false)
+    }
+  }
+
   const activeCourse = courses.find((course) => course.id === selectedCourse) || courses[0] || null
   const activeThread = threads.find((thread) => thread.id === activeThreadId) || null
+  const activeThreadReplies = Array.isArray(activeThread?.replies) ? activeThread.replies : []
 
   const filteredCourses = useMemo(() => {
     const normalized = courseSearch.trim().toLowerCase()
@@ -233,23 +370,50 @@ function App() {
     })
   }, [threadSearch, threads])
 
+  const visibleResources = useMemo(() => {
+    const currentCourseId = String(selectedCourse || '').toUpperCase()
+    const resourcesForCourse = LOCAL_RESOURCES.filter((resource) => String(resource.courseId || '').toUpperCase() === currentCourseId)
+    const normalized = resourceSearch.trim().toLowerCase()
+
+    if (!normalized) {
+      return resourcesForCourse
+    }
+
+    return resourcesForCourse.filter((resource) => {
+      return (
+        String(resource.title || '').toLowerCase().includes(normalized)
+        || String(resource.summary || '').toLowerCase().includes(normalized)
+        || String(resource.type || '').toLowerCase().includes(normalized)
+      )
+    })
+  }, [resourceSearch, selectedCourse])
+
   const courseThreadList = useMemo(() => {
     return visibleThreads.map((thread) => {
-      const createdAt = thread.createdAt ? new Date(thread.createdAt) : null
-      const createdLabel = createdAt && !Number.isNaN(createdAt.getTime())
-        ? createdAt.toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })
-        : 'Recently'
-
       return {
         id: thread.id,
         title: thread.title,
         author: thread.authorName || 'Anonymous',
         body: thread.body,
-        createdLabel,
+        createdLabel: formatThreadDate(thread.createdAt),
         tags: Array.isArray(thread.tags) ? thread.tags : [],
       }
     })
   }, [visibleThreads])
+
+  const activeResource = useMemo(() => {
+    if (visibleResources.length === 0) {
+      return null
+    }
+    return visibleResources.find((resource) => resource.id === activeResourceId) || visibleResources[0]
+  }, [activeResourceId, visibleResources])
+
+  const resourceSidebarItems = useMemo(() => {
+    return visibleResources.map((resource) => ({
+      id: resource.id,
+      label: resource.title,
+    }))
+  }, [visibleResources])
 
   const openAuth = (mode) => {
     setAuthMode(mode)
@@ -325,6 +489,8 @@ function App() {
               title={`${activeCourse?.label || 'Course'} Topics`}
               searchTerm={threadSearch}
               onSearchTermChange={setThreadSearch}
+              searchInputId="thread-search"
+              subheading="Discussions"
               items={courseThreadList.map((thread) => ({
                 id: thread.id,
                 label: thread.title,
@@ -355,27 +521,140 @@ function App() {
                         </span>
                         <div>
                           <strong>{activeThread?.authorName || 'Anonymous'}</strong>
-                          <p>{activeThread?.createdAt ? new Date(activeThread.createdAt).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently'}</p>
+                          <p>{formatThreadDate(activeThread?.createdAt)}</p>
                         </div>
                       </div>
 
                       <div className="thread-detail-course">{activeCourse?.label || 'Course'}</div>
                     </div>
 
-                    <div className="thread-detail-body">
-                      <p>{activeThread?.body}</p>
-                    </div>
+                    <div className="thread-conversation">
+                      <article className="thread-message thread-message-original">
+                        <div className="thread-message-bubble">
+                          <p>{activeThread?.body}</p>
+                        </div>
 
-                    {Array.isArray(activeThread?.tags) && activeThread.tags.length > 0 && (
-                      <div className="thread-tags">
-                        {activeThread.tags.map((tag) => (
-                          <span key={`${activeThread.id}-${tag}`}>{tag}</span>
+                        {Array.isArray(activeThread?.tags) && activeThread.tags.length > 0 && (
+                          <div className="thread-tags">
+                            {activeThread.tags.map((tag) => (
+                              <span key={`${activeThread.id}-${tag}`}>{tag}</span>
+                            ))}
+                          </div>
+                        )}
+                      </article>
+
+                      <div className="thread-replies-feed">
+                        {activeThreadReplies.length === 0 && <p className="thread-replies-empty">No replies yet. Start the conversation below.</p>}
+
+                        {activeThreadReplies.map((reply) => (
+                          <article className="thread-message thread-message-reply" key={reply.id}>
+                            <span className="avatar-dot avatar-dot-reply" aria-hidden="true">
+                              {(reply.authorName || 'A').slice(0, 1).toUpperCase()}
+                            </span>
+
+                            <div className="thread-message-content">
+                              <div className="thread-message-meta">
+                                <strong>{reply.authorName || 'Anonymous'}</strong>
+                                <span>{formatThreadDate(reply.createdAt)}</span>
+                              </div>
+                              <div className="thread-message-bubble thread-message-bubble-reply">
+                                <p>{reply.body}</p>
+                              </div>
+                            </div>
+                          </article>
                         ))}
                       </div>
-                    )}
 
-                    <div className="thread-replies-blank" aria-hidden="true" />
+                      <form className="thread-reply-composer" onSubmit={handleReplySubmit}>
+                        <label htmlFor="thread-reply-body">Reply to this thread</label>
+
+                        {user ? (
+                          <textarea
+                            id="thread-reply-body"
+                            value={replyText}
+                            onChange={(event) => setReplyText(event.target.value)}
+                            placeholder="Write a reply..."
+                            rows={4}
+                          />
+                        ) : (
+                          <div className="thread-reply-lock">
+                            <p>Sign in to reply and join the conversation.</p>
+                            <button type="button" className="auth-chip auth-chip-dark" onClick={() => openAuth('login')}>
+                              Sign in
+                            </button>
+                          </div>
+                        )}
+
+                        {replyError && <p className="panel-message panel-error">{replyError}</p>}
+
+                        {user && (
+                          <div className="reply-submit-row">
+                            <button type="submit" className="reply-submit-button" disabled={replyLoading}>
+                              {replyLoading ? 'Sending...' : 'Reply'}
+                            </button>
+                          </div>
+                        )}
+                      </form>
+                    </div>
                   </div>
+                </>
+              )}
+            </section>
+          </section>
+        )}
+
+        {activePage === 'resources' && (
+          <section className="threads-page">
+            <Sidebar
+              title={`${activeCourse?.label || 'Course'} Library`}
+              searchTerm={resourceSearch}
+              onSearchTermChange={setResourceSearch}
+              searchInputId="resource-search"
+              subheading="Resources"
+              items={resourceSidebarItems}
+              activeItemId={activeResource?.id || ''}
+              onSelectItem={setActiveResourceId}
+            />
+
+            <section className="thread-stage resource-stage">
+              {resourceSidebarItems.length === 0 && (
+                <p className="panel-message">No local resources yet for this course.</p>
+              )}
+
+              {resourceSidebarItems.length > 0 && activeResource && (
+                <>
+                  <header className="thread-title-row">
+                    <h2>{activeResource.title}</h2>
+                  </header>
+
+                  <article className="resource-detail-panel">
+                    <div className="thread-detail-meta">
+                      <div className="thread-detail-author">
+                        <span className="avatar-dot" aria-hidden="true">
+                          {(activeResource.uploader || 'U').slice(0, 1).toUpperCase()}
+                        </span>
+                        <div>
+                          <strong>{activeResource.uploader || 'Anonymous'}</strong>
+                          <p>{formatThreadDate(activeResource.updatedAt)}</p>
+                        </div>
+                      </div>
+
+                      <div className="thread-detail-course">{activeResource.type}</div>
+                    </div>
+
+                    <div className="resource-summary">
+                      <p>{activeResource.summary}</p>
+                    </div>
+
+                    <div className="resource-actions">
+                      <button type="button" className="resource-action-button" disabled>
+                        Open Resource (Coming Soon)
+                      </button>
+                      <button type="button" className="resource-action-button" disabled>
+                        Download (Coming Soon)
+                      </button>
+                    </div>
+                  </article>
                 </>
               )}
             </section>
