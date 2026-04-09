@@ -1,12 +1,12 @@
 function Footer() {
   return (
     <footer className="site-footer">
-      <nav className="social-links" aria-label="Social">
-        <a href="https://x.com" target="_blank" rel="noreferrer">X</a>
-        <a href="https://instagram.com" target="_blank" rel="noreferrer">IG</a>
-        <a href="https://youtube.com" target="_blank" rel="noreferrer">YT</a>
-        <a href="https://linkedin.com" target="_blank" rel="noreferrer">in</a>
-      </nav>
+      <div className="social-links" aria-label="Social">
+        <span>X</span>
+        <span>IG</span>
+        <span>YT</span>
+        <span>in</span>
+      </div>
 
       <div className="footer-links">
         <a href="/about">About</a>

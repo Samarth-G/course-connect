@@ -1,4 +1,3 @@
-import mongoose from "mongoose";
 import {
   addReplyToCourseThreadById,
   deleteCourseThreadById,
@@ -330,13 +329,6 @@ export async function deleteCourseThread(req, res) {
 
 export async function addCourseThreadReply(req, res) {
   const { courseId, threadId } = req.params;
-
-  if (!mongoose.Types.ObjectId.isValid(threadId)) {
-    return res.status(400).json({
-      error: "Invalid thread id",
-    });
-  }
-
   const replyPayloadResult = buildReplyPayload({
     body: req.body?.body,
     authorId: req.user?.id,
