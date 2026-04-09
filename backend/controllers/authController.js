@@ -11,6 +11,7 @@ function buildTokenPayload(user) {
     sub: user.id,
     email: user.email,
     name: user.name,
+    profileImage: user.profileImage || "",
   };
 }
 
@@ -47,10 +48,13 @@ export async function register(req, res) {
 
     const passwordHash = await bcrypt.hash(normalizedPassword, 10);
 
+    const profileImage = req.file ? req.file.filename : "";
+
     const user = await User.create({
       name: normalizedName,
       email: normalizedEmail,
       passwordHash,
+      profileImage,
     });
 
     const safeUser = user.toJSON();
@@ -109,6 +113,14 @@ export async function login(req, res) {
   }
 }
 
-export function me(req, res) {
-  return res.status(200).json({ user: req.user });
+export async function me(req, res) {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    return res.status(200).json({ user: user.toJSON() });
+  } catch {
+    return res.status(500).json({ error: "Failed to fetch user" });
+  }
 }

@@ -19,6 +19,7 @@ export function requireAuth(req, res, next) {
       id: payload.sub,
       email: payload.email,
       name: payload.name,
+      profileImage: payload.profileImage || "",
     };
     return next();
   } catch (error) {
