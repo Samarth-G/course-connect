@@ -1,24 +1,6 @@
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import User from "../models/userModel.js";
+import { getUserProfileById, loginUser, registerUser } from "../services/authService.js";
 
 const PASSWORD_MIN_LENGTH = 8;
-const JWT_SECRET = process.env.JWT_SECRET || "dev-insecure-secret-change-me";
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
-
-function buildTokenPayload(user) {
-  return {
-    sub: user.id,
-    email: user.email,
-    name: user.name,
-    profileImage: user.profileImage || "",
-  };
-}
-
-function signToken(payload) {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
-}
-
 export async function register(req, res) {
   const { name, email, password } = req.body;
 
@@ -39,31 +21,23 @@ export async function register(req, res) {
   }
 
   try {
-    const existingUser = await User.findOne({ email: normalizedEmail });
-    if (existingUser) {
+    const registrationResult = await registerUser({
+      name: normalizedName,
+      email: normalizedEmail,
+      password: normalizedPassword,
+      profileImage: req.file ? req.file.filename : "",
+    });
+
+    if (registrationResult.errorCode === "EMAIL_EXISTS") {
       return res.status(409).json({
         error: "Email is already registered",
       });
     }
 
-    const passwordHash = await bcrypt.hash(normalizedPassword, 10);
-
-    const profileImage = req.file ? req.file.filename : "";
-
-    const user = await User.create({
-      name: normalizedName,
-      email: normalizedEmail,
-      passwordHash,
-      profileImage,
-    });
-
-    const safeUser = user.toJSON();
-    const token = signToken(buildTokenPayload(safeUser));
-
     return res.status(201).json({
       message: "Registered successfully",
-      token,
-      user: safeUser,
+      token: registrationResult.token,
+      user: registrationResult.user,
     });
   } catch (error) {
     return res.status(500).json({
@@ -84,27 +58,21 @@ export async function login(req, res) {
   }
 
   try {
-    const user = await User.findOne({ email: normalizedEmail });
-    if (!user) {
+    const loginResult = await loginUser({
+      email: normalizedEmail,
+      password: normalizedPassword,
+    });
+
+    if (loginResult.errorCode === "INVALID_CREDENTIALS") {
       return res.status(401).json({
         error: "Invalid email or password",
       });
     }
-
-    const passwordMatches = await bcrypt.compare(normalizedPassword, user.passwordHash);
-    if (!passwordMatches) {
-      return res.status(401).json({
-        error: "Invalid email or password",
-      });
-    }
-
-    const safeUser = user.toJSON();
-    const token = signToken(buildTokenPayload(safeUser));
 
     return res.status(200).json({
       message: "Login successful",
-      token,
-      user: safeUser,
+      token: loginResult.token,
+      user: loginResult.user,
     });
   } catch (error) {
     return res.status(500).json({
@@ -115,11 +83,11 @@ export async function login(req, res) {
 
 export async function me(req, res) {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await getUserProfileById(req.user.id);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-    return res.status(200).json({ user: user.toJSON() });
+    return res.status(200).json({ user });
   } catch {
     return res.status(500).json({ error: "Failed to fetch user" });
   }

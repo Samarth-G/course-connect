@@ -1,23 +1,20 @@
-import Thread from "../models/threadModel.js";
+import {
+  addReplyToThreadByCourseAndId,
+  aggregateCourses,
+  createThread,
+  deleteThreadByCourseAndId,
+  findThreadByCourseAndId,
+  searchThreadsByCourse,
+  updateThreadByCourseAndId,
+} from "../repositories/courseThreadRepository.js";
 
 export async function saveCourseThread(threadData) {
-  const createdThread = await Thread.create(threadData);
+  const createdThread = await createThread(threadData);
   return createdThread.toJSON();
 }
 
 export async function addReplyToCourseThreadById(courseId, threadId, replyData) {
-  const updated = await Thread.findOneAndUpdate(
-    {
-      _id: threadId,
-      courseId: { $regex: `^${escapeRegex(String(courseId).trim())}$`, $options: "i" },
-    },
-    {
-      $push: {
-        replies: replyData,
-      },
-    },
-    { returnDocument: "after", runValidators: true },
-  );
+  const updated = await addReplyToThreadByCourseAndId(courseId, threadId, replyData);
 
   return updated ? updated.toJSON() : null;
 }
@@ -43,25 +40,7 @@ function toCourseDescription(latestBody = "") {
 export async function listCoursesFromDb(searchTerm = "") {
   const normalizedSearchTerm = String(searchTerm).trim().toUpperCase();
 
-  const groupedCourses = await Thread.aggregate([
-    {
-      $project: {
-        courseIdUpper: { $toUpper: "$courseId" },
-        body: 1,
-        createdAt: 1,
-      },
-    },
-    { $sort: { createdAt: -1 } },
-    {
-      $group: {
-        _id: "$courseIdUpper",
-        threadCount: { $sum: 1 },
-        latestBody: { $first: "$body" },
-        latestCreatedAt: { $first: "$createdAt" },
-      },
-    },
-    { $sort: { _id: 1 } },
-  ]);
+  const groupedCourses = await aggregateCourses();
 
   const mappedCourses = groupedCourses
     .map((course) => {
@@ -94,36 +73,13 @@ export async function listCoursesFromDb(searchTerm = "") {
   });
 }
 
-function escapeRegex(value) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 export async function searchCourseThreadsFromDb(courseId, searchTerm = "", options = {}) {
   const { page = 1, limit = 20 } = options;
 
-  const normalizedCourseId = String(courseId).trim().toLowerCase();
-  const normalizedSearchTerm = String(searchTerm).trim().toLowerCase();
-  const skip = (page - 1) * limit;
-
-  const query = {
-    courseId: { $regex: `^${escapeRegex(normalizedCourseId)}$`, $options: "i" },
-  };
-
-  if (normalizedSearchTerm) {
-    const safeSearch = escapeRegex(normalizedSearchTerm);
-    query.$or = [
-      { title: { $regex: safeSearch, $options: "i" } },
-      { body: { $regex: safeSearch, $options: "i" } },
-    ];
-  }
-
-  const [results, total] = await Promise.all([
-    Thread.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit),
-    Thread.countDocuments(query),
-  ]);
+  const { results, total } = await searchThreadsByCourse(courseId, searchTerm, {
+    page,
+    limit,
+  });
 
   return {
     results: results.map((thread) => thread.toJSON()),
@@ -135,32 +91,19 @@ export async function searchCourseThreadsFromDb(courseId, searchTerm = "", optio
 }
 
 export async function getCourseThreadById(courseId, threadId) {
-  const thread = await Thread.findOne({
-    _id: threadId,
-    courseId: { $regex: `^${escapeRegex(String(courseId).trim())}$`, $options: "i" },
-  });
+  const thread = await findThreadByCourseAndId(courseId, threadId);
 
   return thread ? thread.toJSON() : null;
 }
 
 export async function updateCourseThreadById(courseId, threadId, updateData) {
-  const updated = await Thread.findOneAndUpdate(
-    {
-      _id: threadId,
-      courseId: { $regex: `^${escapeRegex(String(courseId).trim())}$`, $options: "i" },
-    },
-    updateData,
-    { returnDocument: "after", runValidators: true },
-  );
+  const updated = await updateThreadByCourseAndId(courseId, threadId, updateData);
 
   return updated ? updated.toJSON() : null;
 }
 
 export async function deleteCourseThreadById(courseId, threadId) {
-  const deleted = await Thread.findOneAndDelete({
-    _id: threadId,
-    courseId: { $regex: `^${escapeRegex(String(courseId).trim())}$`, $options: "i" },
-  });
+  const deleted = await deleteThreadByCourseAndId(courseId, threadId);
 
   return Boolean(deleted);
 }
