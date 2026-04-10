@@ -5,6 +5,8 @@ import Course from "../models/courseModel.js";
 import Thread from "../models/threadModel.js";
 import User from "../models/userModel.js";
 import Resource from "../models/resourceModel.js";
+import { findUserByEmail, createUser } from "../repositories/authRepository.js";
+import { findThreadsByCourseAndTitlePairs, insertManyThreads } from "../repositories/courseThreadRepository.js";
 
 const DEMO_USER_EMAIL = "demo@course-connect.local";
 const DEMO_USER_PASSWORD = "Password123!";
