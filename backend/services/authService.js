@@ -1,9 +1,7 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { createUser, findUserByEmail, findUserById } from "../repositories/authRepository.js";
-
-const JWT_SECRET = process.env.JWT_SECRET || "dev-insecure-secret-change-me";
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
+import { JWT_SECRET_KEY, JWT_EXPIRES_IN } from "../config/jwtConfig.js";
 
 function buildTokenPayload(user) {
   return {
@@ -15,7 +13,7 @@ function buildTokenPayload(user) {
 }
 
 function signToken(payload) {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+  return jwt.sign(payload, JWT_SECRET_KEY, { expiresIn: JWT_EXPIRES_IN });
 }
 
 export async function registerUser({ name, email, password, profileImage = "" }) {
@@ -25,7 +23,15 @@ export async function registerUser({ name, email, password, profileImage = "" })
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
-  const user = await createUser({ name, email, passwordHash, profileImage });
+  let user;
+  try {
+    user = await createUser({ name, email, passwordHash, profileImage });
+  } catch (err) {
+    if (err.code === 11000) {
+      return { errorCode: "EMAIL_EXISTS" };
+    }
+    throw err;
+  }
   const safeUser = user.toJSON();
 
   return {

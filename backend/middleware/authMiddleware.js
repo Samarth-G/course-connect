@@ -1,6 +1,5 @@
 import jwt from "jsonwebtoken";
-
-const JWT_SECRET = process.env.JWT_SECRET || "dev-insecure-secret-change-me";
+import { JWT_SECRET_KEY } from "../config/jwtConfig.js";
 
 export function requireAuth(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -14,7 +13,7 @@ export function requireAuth(req, res, next) {
   const token = authHeader.slice("Bearer ".length).trim();
 
   try {
-    const payload = jwt.verify(token, JWT_SECRET);
+    const payload = jwt.verify(token, JWT_SECRET_KEY);
     req.user = {
       id: payload.sub,
       email: payload.email,

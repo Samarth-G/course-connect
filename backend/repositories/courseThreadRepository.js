@@ -11,7 +11,14 @@ export async function findThreadsByCourseAndTitlePairs(courseTitlePairs) {
 
   return Thread.find(
     {
-      $or: courseTitlePairs,
+      $or: courseTitlePairs.map(({ courseId, title }) => ({
+        $expr: {
+          $and: [
+            { $eq: [{ $toLower: "$courseId" }, String(courseId).toLowerCase()] },
+            { $eq: [{ $toLower: "$title" }, String(title).toLowerCase()] },
+          ],
+        },
+      })),
     },
     { courseId: 1, title: 1 },
   ).lean();
