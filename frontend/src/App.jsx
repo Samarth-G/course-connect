@@ -3,68 +3,11 @@ import Header from './components/Header'
 import Footer from './components/Footer'
 import Sidebar from './components/Sidebar'
 import CourseCard from './components/CourseCard'
+import CourseForm from './components/CourseForm'
 import ThreadForm from './components/ThreadForm'
 import './App.css'
 
 const TOKEN_STORAGE_KEY = 'courseconnect_auth_token'
-
-const LOCAL_RESOURCES = [
-  {
-    id: 'cosc-222-slides-week-3',
-    courseId: 'COSC-222',
-    title: 'Week 3 Graph Algorithms Slides',
-    type: 'Slides',
-    summary: 'Traversal concepts, BFS vs DFS patterns, and complexity walk-throughs.',
-    uploader: 'Course Staff',
-    updatedAt: '2026-03-04T15:00:00.000Z',
-  },
-  {
-    id: 'cosc-222-midterm-guide',
-    courseId: 'COSC-222',
-    title: 'Midterm 1 Study Guide',
-    type: 'Study Guide',
-    summary: 'Practice topics and a checklist covering key graph and runtime questions.',
-    uploader: 'Student Mentor',
-    updatedAt: '2026-03-09T13:20:00.000Z',
-  },
-  {
-    id: 'biol-117-genetics-summary',
-    courseId: 'BIOL-117',
-    title: 'Genetics Summary Notes',
-    type: 'Notes',
-    summary: 'Condensed notes for dominant/recessive patterns and Punnett square examples.',
-    uploader: 'Course Staff',
-    updatedAt: '2026-03-10T16:45:00.000Z',
-  },
-  {
-    id: 'biol-117-lab-report-guide',
-    courseId: 'BIOL-117',
-    title: 'Lab Report Writing Guide',
-    type: 'Guide',
-    summary: 'Section-by-section expectations and citation format reminders for reports.',
-    uploader: 'TA Team',
-    updatedAt: '2026-03-11T11:10:00.000Z',
-  },
-  {
-    id: 'comm-105-case-template',
-    courseId: 'COMM-105',
-    title: 'Case Study Analysis Template',
-    type: 'Template',
-    summary: 'A reusable structure for issue framing, options, and recommendations.',
-    uploader: 'Course Staff',
-    updatedAt: '2026-03-13T09:30:00.000Z',
-  },
-  {
-    id: 'comm-105-presentation-checklist',
-    courseId: 'COMM-105',
-    title: 'Presentation Checklist',
-    type: 'Checklist',
-    summary: 'Narrative flow checkpoints and final slide polish reminders before presenting.',
-    uploader: 'Student Mentor',
-    updatedAt: '2026-03-15T18:00:00.000Z',
-  },
-]
-
 function App() {
   const [activePage, setActivePage] = useState('courses')
   const [authMode, setAuthMode] = useState('login')
@@ -81,17 +24,30 @@ function App() {
   const [coursesError, setCoursesError] = useState('')
   const [selectedCourse, setSelectedCourse] = useState('')
   const [courseSearch, setCourseSearch] = useState('')
+  const [showNewCourseForm, setShowNewCourseForm] = useState(false)
   const [threadSearch, setThreadSearch] = useState('')
   const [resourceSearch, setResourceSearch] = useState('')
   const [threads, setThreads] = useState([])
   const [threadsLoading, setThreadsLoading] = useState(false)
   const [threadsError, setThreadsError] = useState('')
   const [activeThreadId, setActiveThreadId] = useState('')
+  const [resources, setResources] = useState([])
+  const [resourcesLoading, setResourcesLoading] = useState(false)
+  const [resourcesError, setResourcesError] = useState('')
   const [activeResourceId, setActiveResourceId] = useState('')
   const [replyText, setReplyText] = useState('')
   const [replyError, setReplyError] = useState('')
   const [replyLoading, setReplyLoading] = useState(false)
   const [showNewThreadForm, setShowNewThreadForm] = useState(false)
+  const [showNewResourceForm, setShowNewResourceForm] = useState(false)
+  const [resourceForm, setResourceForm] = useState({
+    title: '',
+    type: '',
+    summary: '',
+    resourceFile: null,
+  })
+  const [resourceSubmitError, setResourceSubmitError] = useState('')
+  const [resourceSubmitLoading, setResourceSubmitLoading] = useState(false)
 
   useEffect(() => {
     async function restoreSession() {
@@ -131,11 +87,141 @@ function App() {
   }, [])
 
   useEffect(() => {
+    setShowNewCourseForm(false)
+  }, [activePage])
+
+  useEffect(() => {
     if (!selectedCourse) {
       return
     }
     loadThreads(selectedCourse, '')
   }, [selectedCourse])
+
+  useEffect(() => {
+    if (!selectedCourse) {
+      setResources([])
+      setResourcesLoading(false)
+      setResourcesError('')
+      return
+    }
+
+    loadResources(selectedCourse)
+  }, [selectedCourse])
+
+  useEffect(() => {
+    setShowNewResourceForm(false)
+    setResourceSubmitError('')
+    setResourceForm((prev) => ({
+      ...prev,
+      title: '',
+      type: '',
+      summary: '',
+      resourceFile: null,
+    }))
+  }, [selectedCourse])
+  async function loadResources(courseId) {
+    setResourcesLoading(true)
+    setResourcesError('')
+
+    try {
+      const response = await fetch(
+        `/api/courses/${encodeURIComponent(courseId)}/resources`,
+      )
+      const data = await response.json()
+
+      if (!response.ok) {
+        setResources([])
+        setResourcesError(data.error || 'Failed to load resources')
+        return
+      }
+
+      const nextResources = Array.isArray(data.results) ? data.results : []
+      setResources(nextResources)
+    } catch (error) {
+      setResources([])
+      setResourcesError(error.message || 'Unexpected network error')
+    } finally {
+      setResourcesLoading(false)
+    }
+  }
+
+  const handleResourceInputChange = (event) => {
+    const { name, value, files } = event.target
+
+    if (name === 'resourceFile') {
+      setResourceForm((prev) => ({
+        ...prev,
+        resourceFile: files?.[0] || null,
+      }))
+      return
+    }
+
+    setResourceForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }))
+  }
+
+  const handleResourceSubmit = async (event) => {
+    event.preventDefault()
+    setResourceSubmitError('')
+
+    if (!user || !token) {
+      openAuth('login')
+      return
+    }
+
+    if (!selectedCourse) {
+      setResourceSubmitError('Select a course first')
+      return
+    }
+
+    if (!resourceForm.title.trim() || !resourceForm.type.trim() || !resourceForm.summary.trim() || !resourceForm.resourceFile) {
+      setResourceSubmitError('All resource fields and a file are required')
+      return
+    }
+
+    setResourceSubmitLoading(true)
+
+    try {
+      const formData = new FormData()
+      formData.append('title', resourceForm.title.trim())
+      formData.append('type', resourceForm.type.trim())
+      formData.append('summary', resourceForm.summary.trim())
+      formData.append('resourceFile', resourceForm.resourceFile)
+
+      const response = await fetch(`/api/courses/${encodeURIComponent(selectedCourse)}/resources`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setResourceSubmitError(data.error || 'Failed to create resource')
+        return
+      }
+
+      setResourceForm({
+        title: '',
+        type: '',
+        summary: '',
+        resourceFile: null,
+      })
+      setShowNewResourceForm(false)
+      await loadResources(selectedCourse)
+      if (data.id) {
+        setActiveResourceId(data.id)
+      }
+    } catch (error) {
+      setResourceSubmitError(error.message || 'Unexpected network error')
+    } finally {
+      setResourceSubmitLoading(false)
+    }
+  }
 
   useEffect(() => {
     setActiveResourceId('')
@@ -147,6 +233,15 @@ function App() {
     setReplyError('')
     setReplyLoading(false)
   }, [activeThreadId])
+
+  const handleCourseCreated = async (course) => {
+    setShowNewCourseForm(false)
+    setCourseSearch('')
+    await loadCourses('')
+    if (course?.id) {
+      setSelectedCourse(course.id)
+    }
+  }
 
   async function loadCourses(query = '') {
     const trimmedQuery = query.trim()
@@ -374,7 +469,7 @@ function App() {
       return (
         String(course.label || '').toLowerCase().includes(normalized) ||
         String(course.title || '').toLowerCase().includes(normalized) ||
-        course.description.toLowerCase().includes(normalized)
+        String(course.description || '').toLowerCase().includes(normalized)
       )
     })
   }, [courseSearch, courses])
@@ -392,22 +487,20 @@ function App() {
   }, [threadSearch, threads])
 
   const visibleResources = useMemo(() => {
-    const currentCourseId = String(selectedCourse || '').toUpperCase()
-    const resourcesForCourse = LOCAL_RESOURCES.filter((resource) => String(resource.courseId || '').toUpperCase() === currentCourseId)
     const normalized = resourceSearch.trim().toLowerCase()
 
     if (!normalized) {
-      return resourcesForCourse
+      return resources
     }
 
-    return resourcesForCourse.filter((resource) => {
+    return resources.filter((resource) => {
       return (
         String(resource.title || '').toLowerCase().includes(normalized)
         || String(resource.summary || '').toLowerCase().includes(normalized)
         || String(resource.type || '').toLowerCase().includes(normalized)
       )
     })
-  }, [resourceSearch, selectedCourse])
+  }, [resourceSearch, resources])
 
   const courseThreadList = useMemo(() => {
     return visibleThreads.map((thread) => {
@@ -422,19 +515,16 @@ function App() {
     })
   }, [visibleThreads])
 
-  const activeResource = useMemo(() => {
-    if (visibleResources.length === 0) {
-      return null
-    }
-    return visibleResources.find((resource) => resource.id === activeResourceId) || visibleResources[0]
-  }, [activeResourceId, visibleResources])
-
   const resourceSidebarItems = useMemo(() => {
     return visibleResources.map((resource) => ({
       id: resource.id,
       label: resource.title,
     }))
   }, [visibleResources])
+
+  const activeResource = visibleResources.find((resource) => resource.id === activeResourceId) || visibleResources[0] || null
+  const activeResourceFileName = activeResource?.fileName || (activeResource?.filePath ? activeResource.filePath.split('/').pop() : '')
+  const activeResourceFileUrl = activeResource?.filePath ? `/uploads/${activeResource.filePath}` : ''
 
   const openAuth = (mode) => {
     setAuthMode(mode)
@@ -475,9 +565,28 @@ function App() {
                     onChange={(event) => setCourseSearch(event.target.value)}
                     placeholder="Find A Course (e.g. COSC 320)"
                   />
-                  <span className="search-icon">Q</span>
                 </label>
+                <button
+                  type="button"
+                  className="new-thread-button courses-new-button"
+                  onClick={() => {
+                    if (!user || !token) {
+                      openAuth('login')
+                      return
+                    }
+                    setShowNewCourseForm((prev) => !prev)
+                  }}
+                >
+                  {showNewCourseForm ? '✕ Cancel' : '+ New Course'}
+                </button>
               </div>
+
+              {showNewCourseForm && (
+                <CourseForm
+                  token={token}
+                  onCreated={handleCourseCreated}
+                />
+              )}
 
               <div className="course-grid">
                 {coursesLoading && <p className="panel-message">Loading courses...</p>}
@@ -497,7 +606,7 @@ function App() {
                 ))}
 
                 {!coursesLoading && !coursesError && filteredCourses.length === 0 && (
-                  <p className="panel-message">No courses found from your thread data.</p>
+                  <p className="panel-message">No courses found.</p>
                 )}
               </div>
             </section>
@@ -544,7 +653,7 @@ function App() {
                 <ThreadForm
                   token={token}
                   defaultCourse={selectedCourse}
-                  courseOptions={courses.map((c) => ({ code: c.id, title: c.label || c.id }))}
+                  courseOptions={courses}
                   onCreated={async (thread) => {
                     setShowNewThreadForm(false)
                     if (thread?.courseId) {
@@ -686,11 +795,90 @@ function App() {
             />
 
             <section className="thread-stage resource-stage">
-              {resourceSidebarItems.length === 0 && (
-                <p className="panel-message">No local resources yet for this course.</p>
+              <div className="thread-stage-toolbar">
+                <button
+                  type="button"
+                  className="new-thread-button"
+                  onClick={() => {
+                    if (!user || !token) {
+                      openAuth('login')
+                      return
+                    }
+                    setShowNewResourceForm((prev) => !prev)
+                  }}
+                >
+                  {showNewResourceForm ? '✕ Cancel' : '+ New Resource'}
+                </button>
+              </div>
+
+              {showNewResourceForm && (
+                <form className="resource-form" onSubmit={handleResourceSubmit}>
+                  <div className="resource-form-header">
+                    <div>
+                      <p className="resource-form-eyebrow">Upload</p>
+                      <h3>Add a new resource</h3>
+                    </div>
+                    <small>Posting to: {activeCourse?.label || selectedCourse || 'Selected course'}</small>
+                  </div>
+
+                  <div className="resource-form-grid">
+                    <input
+                      type="text"
+                      name="title"
+                      value={resourceForm.title}
+                      onChange={handleResourceInputChange}
+                      placeholder="Resource title"
+                      required
+                    />
+                    <input
+                      type="text"
+                      name="type"
+                      value={resourceForm.type}
+                      onChange={handleResourceInputChange}
+                      placeholder="Type, e.g. Slides"
+                      required
+                    />
+                  </div>
+
+                  <textarea
+                    name="summary"
+                    value={resourceForm.summary}
+                    onChange={handleResourceInputChange}
+                    placeholder="Short description"
+                    rows={5}
+                    required
+                  />
+
+                  <input
+                    type="file"
+                    name="resourceFile"
+                    onChange={handleResourceInputChange}
+                    required
+                  />
+
+                  {resourceSubmitError && <p className="panel-message panel-error">{resourceSubmitError}</p>}
+
+                  <div className="reply-submit-row">
+                    <button type="submit" className="reply-submit-button" disabled={resourceSubmitLoading}>
+                      {resourceSubmitLoading ? 'Uploading...' : 'Upload resource'}
+                    </button>
+                  </div>
+                </form>
               )}
 
-              {resourceSidebarItems.length > 0 && activeResource && (
+              {resourcesLoading && (
+                <p className="panel-message">Loading resources...</p>
+              )}
+
+              {!resourcesLoading && resourcesError && (
+                <p className="panel-message">{resourcesError}</p>
+              )}
+
+              {!resourcesLoading && !resourcesError && resourceSidebarItems.length === 0 && (
+                <p className="panel-message">No resources yet for this course.</p>
+              )}
+
+              {!resourcesLoading && !resourcesError && resourceSidebarItems.length > 0 && activeResource && (
                 <>
                   <header className="thread-title-row">
                     <h2>{activeResource.title}</h2>
@@ -704,11 +892,16 @@ function App() {
                         </span>
                         <div>
                           <strong>{activeResource.uploader || 'Anonymous'}</strong>
-                          <p>{formatThreadDate(activeResource.updatedAt)}</p>
+                          <p>{formatThreadDate(activeResource.createdAt || activeResource.updatedAt)}</p>
                         </div>
                       </div>
 
                       <div className="thread-detail-course">{activeResource.type}</div>
+                    </div>
+
+                    <div className="resource-file-meta">
+                      <strong>{activeResourceFileName || 'No file attached'}</strong>
+                      <p>{activeResource.mimeType || 'Uploaded attachment'}</p>
                     </div>
 
                     <div className="resource-summary">
@@ -716,12 +909,20 @@ function App() {
                     </div>
 
                     <div className="resource-actions">
-                      <button type="button" className="resource-action-button" disabled>
-                        Open Resource (Coming Soon)
-                      </button>
-                      <button type="button" className="resource-action-button" disabled>
-                        Download (Coming Soon)
-                      </button>
+                      {activeResourceFileUrl ? (
+                        <>
+                          <a href={activeResourceFileUrl} target="_blank" rel="noreferrer" className="resource-action-button resource-action-link">
+                            Open Resource
+                          </a>
+                          <a href={activeResourceFileUrl} download className="resource-action-button resource-action-link">
+                            Download
+                          </a>
+                        </>
+                      ) : (
+                        <button type="button" className="resource-action-button" disabled>
+                          No file attached
+                        </button>
+                      )}
                     </div>
                   </article>
                 </>

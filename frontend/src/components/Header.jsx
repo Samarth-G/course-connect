@@ -8,7 +8,7 @@ function Header({ user, activePage, onNavigate, onShowAuth, onLogout }) {
   return (
     <header className="topbar">
       <button type="button" className="logo-mark" onClick={() => onNavigate('courses')} aria-label="CourseConnect Home">
-        []
+        C
       </button>
 
       <nav className="main-nav" aria-label="Primary">
