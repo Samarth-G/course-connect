@@ -19,7 +19,7 @@ export async function getResourcesByCourseId(courseId) {
   return resources.map((resource) => resource.toJSON());
 }
 
-export async function searchResourcesByCourseBjId(courseId, searchTerm = "", options = {}) {
+export async function searchResourcesByCourseId(courseId, searchTerm = "", options = {}) {
   const { page = 1, limit = 20 } = options;
 
   const normalizedCourseId = String(courseId).trim().toLowerCase();

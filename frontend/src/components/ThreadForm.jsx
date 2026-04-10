@@ -98,7 +98,7 @@ export default function ThreadForm({ token, defaultCourse = '', courseOptions = 
           <h2 style={{ margin: '6px 0 0' }}>Create a new thread</h2>
         </div>
         <small style={{ color: '#6b7280' }}>
-          Posting to: {defaultCourse || 'Select a course'}
+          Posting to: {courseOptions.find((c) => c.id === formData.course)?.label || formData.course || 'Select a course'}
         </small>
       </div>
 

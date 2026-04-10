@@ -1,12 +1,14 @@
 import {
-  getResourcesByCourseId,
-  searchResourcesByCourseBjId,
-  getResourceById,
+  searchResourcesByCourseId,
+  getResourceById as getResourceByIdFromService,
   saveResource,
   deleteResourceById,
 } from "../services/resourceService.js";
 import { unlink } from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const TITLE_MAX_LENGTH = 200;
 const SUMMARY_MAX_LENGTH = 500;
@@ -30,7 +32,7 @@ async function removeUploadedFile(filePathValue) {
     return;
   }
 
-  const absolutePath = path.join(process.cwd(), "uploads", filePathValue);
+  const absolutePath = path.join(__dirname, "../uploads", filePathValue);
   try {
     await unlink(absolutePath);
   } catch {
@@ -38,7 +40,7 @@ async function removeUploadedFile(filePathValue) {
   }
 }
 
-export async function searchResourcesByCourseld(req, res) {
+export async function searchResourcesByCourseId(req, res) {
   const { courseId } = req.params;
   const { q = "", page = "1", limit = "20" } = req.query;
 
@@ -56,7 +58,7 @@ export async function searchResourcesByCourseld(req, res) {
     : 20;
 
   try {
-    const searchPayload = await searchResourcesByCourseBjId(courseId, q, {
+    const searchPayload = await searchResourcesByCourseId(courseId, q, {
       page: safePage,
       limit: safeLimit,
     });
@@ -77,11 +79,11 @@ export async function searchResourcesByCourseld(req, res) {
   }
 }
 
-export async function getResourceByld(req, res) {
+export async function getResourceById(req, res) {
   const { resourceId } = req.params;
 
   try {
-    const resource = await getResourceById(resourceId);
+    const resource = await getResourceByIdFromService(resourceId);
 
     if (!resource) {
       return res.status(404).json({
@@ -104,6 +106,7 @@ export async function createResource(req, res) {
 
   //validate
   if (typeof title !== "string" || typeof type !== "string" || typeof summary !== "string") {
+    await removeUploadedFile(uploadedFile?.filePath);
     return res.status(400).json({
       error: "title, type, and summary must be non-empty strings",
     });
@@ -116,24 +119,28 @@ export async function createResource(req, res) {
   const normalizedUploaderId = String(req.user?.id ?? "").trim();
 
   if (normalizedTitle.length === 0 || normalizedType.length === 0 || normalizedSummary.length === 0) {
+    await removeUploadedFile(uploadedFile?.filePath);
     return res.status(400).json({
       error: "title, type, and summary are required",
     });
   }
 
   if (normalizedTitle.length > TITLE_MAX_LENGTH) {
+    await removeUploadedFile(uploadedFile?.filePath);
     return res.status(400).json({
       error: `title must be ${TITLE_MAX_LENGTH} characters or fewer`,
     });
   }
 
   if (normalizedType.length > TYPE_MAX_LENGTH) {
+    await removeUploadedFile(uploadedFile?.filePath);
     return res.status(400).json({
       error: `type must be ${TYPE_MAX_LENGTH} characters or fewer`,
     });
   }
 
   if (normalizedSummary.length > SUMMARY_MAX_LENGTH) {
+    await removeUploadedFile(uploadedFile?.filePath);
     return res.status(400).json({
       error: `summary must be ${SUMMARY_MAX_LENGTH} characters or fewer`,
     });
@@ -158,6 +165,7 @@ export async function createResource(req, res) {
 
     return res.status(201).json(createdResource);
   } catch (error) {
+    await removeUploadedFile(uploadedFile?.filePath);
     return res.status(500).json({
       error: "Failed to create resource",
     });
@@ -168,7 +176,7 @@ export async function deleteResource(req, res) {
   const { resourceId } = req.params;
 
   try {
-    const existingResource = await getResourceById(resourceId);
+    const existingResource = await getResourceByIdFromService(resourceId);
 
     if (!existingResource) {
       return res.status(404).json({

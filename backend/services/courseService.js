@@ -32,21 +32,19 @@ export async function getCourseById(courseId) {
 }
 
 export async function listCoursesFromDb(searchTerm = "") {
-  const normalizedSearchTerm = String(searchTerm).trim().toUpperCase();
+  const normalizedSearchTerm = String(searchTerm).trim();
+  const query = {};
 
-  const courses = await Course.find({}).sort({ createdAt: -1 });
-  const mappedCourses = courses.map((course) => mapCourse(course.toJSON()));
+  if (normalizedSearchTerm) {
+    const escapedSearchTerm = escapeRegex(normalizedSearchTerm);
 
-  if (!normalizedSearchTerm) {
-    return mappedCourses;
+    query.$or = [
+      { courseId: { $regex: escapedSearchTerm, $options: "i" } },
+      { title: { $regex: escapedSearchTerm, $options: "i" } },
+      { description: { $regex: escapedSearchTerm, $options: "i" } },
+    ];
   }
 
-  return mappedCourses.filter((course) => {
-    return (
-      course.id.toUpperCase().includes(normalizedSearchTerm)
-      || course.label.toUpperCase().includes(normalizedSearchTerm)
-      || course.title.toUpperCase().includes(normalizedSearchTerm)
-      || course.description.toUpperCase().includes(normalizedSearchTerm)
-    );
-  });
+  const courses = await Course.find(query).sort({ createdAt: -1 });
+  return courses.map((course) => mapCourse(course.toJSON()));
 }

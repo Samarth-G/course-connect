@@ -123,20 +123,34 @@ function App() {
     setResourcesLoading(true)
     setResourcesError('')
 
-    try {
-      const response = await fetch(
-        `/api/courses/${encodeURIComponent(courseId)}/resources`,
-      )
-      const data = await response.json()
+    const pageSize = 100
+    let page = 1
+    let allResources = []
 
-      if (!response.ok) {
-        setResources([])
-        setResourcesError(data.error || 'Failed to load resources')
-        return
+    try {
+      while (true) {
+        const response = await fetch(
+          `/api/courses/${encodeURIComponent(courseId)}/resources?limit=${pageSize}&page=${page}`,
+        )
+        const data = await response.json()
+
+        if (!response.ok) {
+          setResources([])
+          setResourcesError(data.error || 'Failed to load resources')
+          return
+        }
+
+        const pageResults = Array.isArray(data.results) ? data.results : []
+        allResources = allResources.concat(pageResults)
+
+        if (pageResults.length < pageSize) {
+          break
+        }
+
+        page += 1
       }
 
-      const nextResources = Array.isArray(data.results) ? data.results : []
-      setResources(nextResources)
+      setResources(allResources)
     } catch (error) {
       setResources([])
       setResourcesError(error.message || 'Unexpected network error')

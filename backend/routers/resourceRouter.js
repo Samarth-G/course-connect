@@ -1,7 +1,7 @@
 import express from "express";
 import {
-  searchResourcesByCourseld,
-  getResourceByld,
+  searchResourcesByCourseId,
+  getResourceById,
   createResource,
   deleteResource,
 } from "../controllers/resourceController.js";
@@ -10,8 +10,8 @@ import { resourceUpload } from "../middleware/resourceUpload.js";
 
 const router = express.Router({ mergeParams: true });
 
-router.get("/", searchResourcesByCourseld);
-router.get("/:resourceId", getResourceByld);
+router.get("/", searchResourcesByCourseId);
+router.get("/:resourceId", getResourceById);
 router.post("/", requireAuth, resourceUpload.single("resourceFile"), createResource);
 router.delete("/:resourceId", requireAuth, deleteResource);
 
