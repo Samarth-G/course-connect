@@ -27,7 +27,7 @@ export async function registerUser({ name, email, password, profileImage = "" })
   try {
     user = await createUser({ name, email, passwordHash, profileImage });
   } catch (err) {
-    if (err.code === 11000) {
+    if (err.code === 11000 && err.keyPattern?.email !== undefined) {
       return { errorCode: "EMAIL_EXISTS" };
     }
     throw err;
