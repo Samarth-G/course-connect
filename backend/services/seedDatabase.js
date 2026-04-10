@@ -31,9 +31,9 @@ async function loadSeedResources() {
 }
 
 export async function seedDatabase() {
-  let demoUser = await User.findOne({ email: DEMO_USER_EMAIL });
+  let demoUser = await findUserByEmail(DEMO_USER_EMAIL);
   if (!demoUser) {
-    demoUser = await User.create({
+    demoUser = await createUser({
       name: "CourseConnect Demo",
       email: DEMO_USER_EMAIL,
       passwordHash: await bcrypt.hash(DEMO_USER_PASSWORD, 10),
@@ -84,15 +84,12 @@ export async function seedDatabase() {
   }
 
   const seedThreads = await loadSeedThreads();
-  const existingThreads = await Thread.find(
-    {
-      $or: seedThreads.map((thread) => ({
-        courseId: thread.courseId,
-        title: thread.title,
-      })),
-    },
-    { courseId: 1, title: 1 },
-  ).lean();
+  const existingThreads = await findThreadsByCourseAndTitlePairs(
+    seedThreads.map((thread) => ({
+      courseId: thread.courseId,
+      title: thread.title,
+    })),
+  );
 
   const existingThreadKeys = new Set(
     existingThreads.map((thread) => `${String(thread.courseId).toLowerCase()}::${String(thread.title).toLowerCase()}`),
@@ -114,7 +111,7 @@ export async function seedDatabase() {
     }));
 
   if (threadDocuments.length > 0) {
-    await Thread.insertMany(threadDocuments);
+    await insertManyThreads(threadDocuments);
     console.log(`Seeded ${threadDocuments.length} thread(s)`);
   } else {
     console.log("No new threads to seed");
