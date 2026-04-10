@@ -1,5 +1,5 @@
 import {
-  searchResourcesByCourseId,
+  searchResourcesByCourseId as searchResourcesByCourseIdFromService,
   getResourceById as getResourceByIdFromService,
   saveResource,
   deleteResourceById,
@@ -58,7 +58,7 @@ export async function searchResourcesByCourseId(req, res) {
     : 20;
 
   try {
-    const searchPayload = await searchResourcesByCourseId(courseId, q, {
+    const searchPayload = await searchResourcesByCourseIdFromService(courseId, q, {
       page: safePage,
       limit: safeLimit,
     });
