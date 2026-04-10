@@ -27,7 +27,14 @@
   border: none;
   background: transparent;
   color: #26262a;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
   padding: 0;
   cursor: pointer;
 }
@@ -149,8 +156,8 @@
 }
 
 .courses-header {
-  display: grid;
-  grid-template-columns: auto minmax(260px, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: 14px;
   align-items: center;
   margin-bottom: 12px;
@@ -159,6 +166,18 @@
 .courses-header h2 {
   margin: 0;
   font-size: 2rem;
+}
+
+.courses-header .search-pill {
+  flex: 1 1 280px;
+}
+
+.courses-new-button {
+  white-space: nowrap;
+}
+
+.course-form-panel {
+  margin-bottom: 18px;
 }
 
 .search-pill {
@@ -582,6 +601,57 @@
   gap: 10px;
 }
 
+.resource-form {
+  display: grid;
+  gap: 12px;
+  border: 1px solid #d7d7dc;
+  border-radius: 14px;
+  background: #f7f7f7;
+  padding: 14px;
+}
+
+.resource-form-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.resource-form-eyebrow {
+  margin: 0;
+  color: #6d6d74;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.74rem;
+}
+
+.resource-form-header h3 {
+  margin: 4px 0 0;
+}
+
+.resource-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.resource-form input,
+.resource-form textarea {
+  width: 100%;
+  border: 1px solid #cfcfd4;
+  border-radius: 10px;
+  padding: 11px 12px;
+  background: #fff;
+  color: #222228;
+  font: inherit;
+}
+
+.resource-form textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
 .resource-detail-panel {
   display: grid;
   gap: 14px;
@@ -603,6 +673,24 @@
   line-height: 1.45;
 }
 
+.resource-file-meta {
+  border: 1px solid #d7d7dc;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 12px 14px;
+}
+
+.resource-file-meta strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.resource-file-meta p {
+  margin: 0;
+  color: #6d6d74;
+  font-size: 0.86rem;
+}
+
 .resource-actions {
   display: flex;
   gap: 8px;
@@ -616,6 +704,12 @@
   border-radius: 6px;
   font-size: 0.78rem;
   padding: 6px 10px;
+}
+
+.resource-action-link {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
 }
 
 .panel-message {

@@ -5,7 +5,8 @@
     "title": "Need help studying for MT1",
     "body": "What chapters should I prioritize for the first midterm?",
     "author": "Alex",
-    "createdAt": "2026-03-01T14:30:00.000Z"
+    "createdAt": "2026-03-01T14:30:00.000Z",
+    "tags": ["midterm", "question"]
   },
   {
     "id": "t-002",
@@ -13,7 +14,8 @@
     "title": "DFS has me confused",
     "body": "Can someone explain DFS recursively versus iteratively?",
     "author": "Priya",
-    "createdAt": "2026-03-02T09:10:00.000Z"
+    "createdAt": "2026-03-02T09:10:00.000Z",
+    "tags": ["discussion", "question"]
   },
   {
     "id": "t-003",
@@ -21,7 +23,8 @@
     "title": "Pseudocode formatting question",
     "body": "How detailed should pseudocode be for assignment 2?",
     "author": "Jordan",
-    "createdAt": "2026-03-04T18:20:00.000Z"
+    "createdAt": "2026-03-04T18:20:00.000Z",
+    "tags": ["assignment", "notes"]
   },
   {
     "id": "t-004",
@@ -29,7 +32,8 @@
     "title": "Big O cheat sheet",
     "body": "Does anyone have a quick reference for common complexities?",
     "author": "Maya",
-    "createdAt": "2026-03-05T12:40:00.000Z"
+    "createdAt": "2026-03-05T12:40:00.000Z",
+    "tags": ["quiz", "notes"]
   },
   {
     "id": "t-005",
@@ -37,7 +41,8 @@
     "title": "Natural selection practice",
     "body": "Looking for extra questions on natural selection and adaptation.",
     "author": "Chris",
-    "createdAt": "2026-03-06T16:05:00.000Z"
+    "createdAt": "2026-03-06T16:05:00.000Z",
+    "tags": ["quiz", "notes"]
   },
   {
     "id": "t-006",
@@ -45,7 +50,8 @@
     "title": "Lab report citation style",
     "body": "Are we using APA or CSE in the next lab report?",
     "author": "Taylor",
-    "createdAt": "2026-03-07T11:15:00.000Z"
+    "createdAt": "2026-03-07T11:15:00.000Z",
+    "tags": ["discussion", "question"]
   },
   {
     "id": "t-007",
@@ -53,7 +59,8 @@
     "title": "Genetics review session",
     "body": "Anyone interested in a study group before the quiz?",
     "author": "Sam",
-    "createdAt": "2026-03-08T19:55:00.000Z"
+    "createdAt": "2026-03-08T19:55:00.000Z",
+    "tags": ["quiz", "discussion"]
   },
   {
     "id": "t-008",
@@ -61,7 +68,8 @@
     "title": "Case study prep tips",
     "body": "How are you structuring your analysis for the case write-up?",
     "author": "Lee",
-    "createdAt": "2026-03-10T08:45:00.000Z"
+    "createdAt": "2026-03-10T08:45:00.000Z",
+    "tags": ["essay", "notes"]
   },
   {
     "id": "t-009",
@@ -69,7 +77,8 @@
     "title": "Presentation rubric clarity",
     "body": "Can someone break down what the TA means by narrative flow?",
     "author": "Nina",
-    "createdAt": "2026-03-12T10:25:00.000Z"
+    "createdAt": "2026-03-12T10:25:00.000Z",
+    "tags": ["discussion", "question"]
   },
   {
     "id": "t-010",
@@ -77,6 +86,61 @@
     "title": "Team contract examples",
     "body": "Any examples of good team contracts from previous terms?",
     "author": "Owen",
-    "createdAt": "2026-03-14T13:35:00.000Z"
+    "createdAt": "2026-03-14T13:35:00.000Z",
+    "tags": ["discussion", "notes"]
+  },
+  {
+    "id": "t-011",
+    "courseId": "MGMT-250",
+    "title": "Policy project scope",
+    "body": "Are we expected to include governance and management risks for the project?",
+    "author": "Avery",
+    "createdAt": "2026-03-16T09:20:00.000Z",
+    "tags": ["question", "notes"]
+  },
+  {
+    "id": "t-012",
+    "courseId": "MGMT-250",
+    "title": "People impact examples",
+    "body": "Can anyone share examples of staff workflow in small businesses?",
+    "author": "Riley",
+    "createdAt": "2026-03-17T15:05:00.000Z",
+    "tags": ["discussion", "notes"]
+  },
+  {
+    "id": "t-013",
+    "courseId": "GEOG-128",
+    "title": "Human geography essay sources",
+    "body": "What are good starter readings for the first essay?",
+    "author": "Morgan",
+    "createdAt": "2026-03-18T10:40:00.000Z",
+    "tags": ["essay", "question"]
+  },
+  {
+    "id": "t-014",
+    "courseId": "GEOG-128",
+    "title": "Map analysis expectations",
+    "body": "How detailed should our critique be when discussing spatial maps?",
+    "author": "Devon",
+    "createdAt": "2026-03-19T14:10:00.000Z",
+    "tags": ["assignment", "notes"]
+  },
+  {
+    "id": "t-015",
+    "courseId": "PHYS-215",
+    "title": "Entropy intuition help",
+    "body": "I understand formulas, but I still struggle with the physical intuition behind entropy increase.",
+    "author": "Jamie",
+    "createdAt": "2026-03-20T12:25:00.000Z",
+    "tags": ["question", "notes"]
+  },
+  {
+    "id": "t-016",
+    "courseId": "PHYS-215",
+    "title": "Heat engine efficiency practice",
+    "body": "Does anyone have a clean method for efficiency questions under exam pressure?",
+    "author": "Casey",
+    "createdAt": "2026-03-21T17:30:00.000Z",
+    "tags": ["quiz", "question"]
   }
 ]

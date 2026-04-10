@@ -1,0 +1,32 @@
+[
+  {
+    "courseId": "COSC-222",
+    "title": "COSC 222 - Data Structures",
+    "description": "Introduction to the design, implementation and analysis of data structures. Topics will include lists, stacks, queues, trees, and graphs."
+  },
+  {
+    "courseId": "BIOL-117",
+    "title": "BIOL 117 - Evolutionary Biology",
+    "description": "Evolutionary theory and its underlying genetic basis; population, community, ecosystem, and behavioural ecology."
+  },
+  {
+    "courseId": "COMM-105",
+    "title": "COMM 105 - Business Fundamentals",
+    "description": "An introduction to the roles and responsibilities of business at individual, organizational, and societal levels."
+  },
+  {
+    "courseId": "MGMT-250",
+    "title": "MGMT 250 - Managerial Issues in IT",
+    "description": "IT managerial issues and their impact on small and medium enterprises and their people."
+  },
+  {
+    "courseId": "GEOG-128",
+    "title": "GEOG 128 - Human Geography",
+    "description": "Critical introduction to the study and application of the major themes of human geography, including historical and cultural geographies."
+  },
+  {
+    "courseId": "PHYS-215",
+    "title": "PHYS 215 - Thermodynamics",
+    "description": "Thermodynamics at an intermediate level. Temperature and work, First Law, heat transfer, heat engines, entropy, and the Second Law."
+  }
+]

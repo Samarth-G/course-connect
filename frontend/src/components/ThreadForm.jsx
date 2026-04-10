@@ -1,12 +1,6 @@
 import { useEffect, useState } from 'react'
 
-const FALLBACK_COURSES = [
-  { code: 'COSC-222', title: 'COSC 222 - Data Structures' },
-  { code: 'BIOL-117', title: 'BIOL 117 - Evolutionary Biology' },
-  { code: 'COMM-105', title: 'COMM 105 - Business Fundamentals' },
-]
-
-export default function ThreadForm({ token, defaultCourse = FALLBACK_COURSES[0].code, courseOptions = FALLBACK_COURSES, onCreated }) {
+export default function ThreadForm({ token, defaultCourse = '', courseOptions = [], onCreated }) {
   const [formData, setFormData] = useState({
     course: defaultCourse,
     threadname: '',
@@ -104,7 +98,7 @@ export default function ThreadForm({ token, defaultCourse = FALLBACK_COURSES[0].
           <h2 style={{ margin: '6px 0 0' }}>Create a new thread</h2>
         </div>
         <small style={{ color: '#6b7280' }}>
-          Posting to: {defaultCourse}
+          Posting to: {courseOptions.find((c) => c.id === formData.course)?.label || formData.course || 'Select a course'}
         </small>
       </div>
 
@@ -119,9 +113,9 @@ export default function ThreadForm({ token, defaultCourse = FALLBACK_COURSES[0].
             required
             style={{ width: '100%', marginTop: '6px', padding: '12px', borderRadius: '12px', border: '1px solid #d1d5db' }}
           >
-            {courseOptions.map((course) => (
-              <option key={course.code} value={course.code}>
-                {course.title}
+              {courseOptions.map((course) => (
+                <option key={course.id} value={course.id}>
+                  {course.label || course.title || course.id}
               </option>
             ))}
           </select>

@@ -7,7 +7,7 @@ function CourseCard({ code, title, description, onOpenDiscussion }) {
 
       <h3>{code}</h3>
       <p className="course-title">{title}</p>
-      <p className="course-description">{description}</p>
+      {description ? <p className="course-description">{description}</p> : null}
 
       <div className="course-actions">
         <button type="button" onClick={onOpenDiscussion}>Discussion</button>
