@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import DOMPurify from 'dompurify'
-import { useSocket } from '../contexts/SocketContext'
+import { useSocket } from '../contexts/socketContext'
 
 export default function AdminDashboard({ user, token }) {
   const { socket, addNotification } = useSocket() || {}
+  const addNotificationRef = useRef(addNotification)
+  useEffect(() => { addNotificationRef.current = addNotification }, [addNotification])
 
   const [users, setUsers] = useState([])
   const [userSearch, setUserSearch] = useState('')
@@ -39,9 +41,31 @@ export default function AdminDashboard({ user, token }) {
   }, [])
 
   // Load users
-  useEffect(() => {
-    loadUsers()
+  const loadUsers = useCallback(async (searchTerm = '') => {
+    if (!token) return
+    setUsersLoading(true)
+    setUsersError('')
+
+    try {
+      const q = String(searchTerm).trim()
+      const url = q ? `/api/admin/users?q=${encodeURIComponent(q)}` : '/api/admin/users'
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+      const data = await res.json()
+      if (!res.ok) {
+        setUsersError(data.error || 'Failed to load users')
+        return
+      }
+      setUsers(Array.isArray(data.results) ? data.results : [])
+    } catch (err) {
+      setUsersError(err.message || 'Unexpected network error')
+    } finally {
+      setUsersLoading(false)
+    }
   }, [token])
+
+  useEffect(() => {
+    loadUsers('')
+  }, [loadUsers])
 
   // Load threads when course changes
   useEffect(() => {
@@ -52,9 +76,17 @@ export default function AdminDashboard({ user, token }) {
   useEffect(() => {
     if (!socket) return
 
-    const handleUserToggled = ({ userId, enabled }) => {
-      setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, enabled } : u)))
-      addNotification?.(`User ${enabled ? 'enabled' : 'disabled'}`)
+    const handleUserToggled = (payload) => {
+      const normalizedUserId = payload?.userId || payload?.id
+      const normalizedEnabled = payload?.enabled
+      if (!normalizedUserId || typeof normalizedEnabled !== 'boolean') return
+
+      setUsers((prev) => prev.map((u) => (u.id === normalizedUserId ? { ...u, enabled: normalizedEnabled } : u)))
+      addNotificationRef.current?.(`User ${normalizedEnabled ? 'enabled' : 'disabled'}`)
+    }
+    const handleUserUpdated = (updatedUser) => {
+      if (!updatedUser?.id) return
+      setUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? { ...u, ...updatedUser } : u)))
     }
     const handleThreadCreated = (thread) => {
       if (thread.courseId === threadCourse) {
@@ -69,39 +101,19 @@ export default function AdminDashboard({ user, token }) {
     }
 
     socket.on('user:toggled', handleUserToggled)
+    socket.on('user:updated', handleUserUpdated)
     socket.on('thread:created', handleThreadCreated)
     socket.on('thread:updated', handleThreadUpdated)
     socket.on('thread:deleted', handleThreadDeleted)
 
     return () => {
       socket.off('user:toggled', handleUserToggled)
+      socket.off('user:updated', handleUserUpdated)
       socket.off('thread:created', handleThreadCreated)
       socket.off('thread:updated', handleThreadUpdated)
       socket.off('thread:deleted', handleThreadDeleted)
     }
   }, [socket, threadCourse])
-
-  async function loadUsers() {
-    if (!token) return
-    setUsersLoading(true)
-    setUsersError('')
-
-    try {
-      const q = userSearch.trim()
-      const url = q ? `/api/admin/users?q=${encodeURIComponent(q)}` : '/api/admin/users'
-      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
-      const data = await res.json()
-      if (!res.ok) {
-        setUsersError(data.error || 'Failed to load users')
-        return
-      }
-      setUsers(Array.isArray(data.results) ? data.results : [])
-    } catch (err) {
-      setUsersError(err.message || 'Unexpected network error')
-    } finally {
-      setUsersLoading(false)
-    }
-  }
 
   async function handleToggleUser(userId) {
     try {
@@ -211,7 +223,7 @@ export default function AdminDashboard({ user, token }) {
       {/* User Management */}
       <div className="admin-section">
         <h2>User Management</h2>
-        <form className="admin-search-bar" onSubmit={(e) => { e.preventDefault(); loadUsers() }}>
+        <form className="admin-search-bar" onSubmit={(e) => { e.preventDefault(); loadUsers(userSearch) }}>
           <input
             type="search"
             value={userSearch}

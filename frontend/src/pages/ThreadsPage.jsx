@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import DOMPurify from 'dompurify'
 import Sidebar from '../components/Sidebar'
 import ThreadForm from '../components/ThreadForm'
-import { useSocket } from '../contexts/SocketContext'
+import { useSocket } from '../contexts/socketContext'
 
 export default function ThreadsPage({ user, token, courses, selectedCourse, setSelectedCourse, openAuth }) {
   const { socket, addNotification } = useSocket() || {}

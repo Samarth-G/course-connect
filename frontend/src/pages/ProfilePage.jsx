@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useSocket } from '../contexts/socketContext'
 
 export default function ProfilePage({ user, token, setUser }) {
+  const { socket } = useSocket() || {}
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState({ name: user?.name || '', email: user?.email || '', profileImage: null })
   const [error, setError] = useState('')
@@ -8,6 +10,22 @@ export default function ProfilePage({ user, token, setUser }) {
   const [loading, setLoading] = useState(false)
 
   const avatarUrl = user?.profileImage ? `/uploads/${user.profileImage}` : null
+
+  useEffect(() => {
+    if (!socket || !user?.id) return
+
+    const handleUserUpdated = (updatedUser) => {
+      if (!updatedUser?.id) return
+      if (String(updatedUser.id) !== String(user.id)) return
+      setUser(updatedUser)
+    }
+
+    socket.on('user:updated', handleUserUpdated)
+
+    return () => {
+      socket.off('user:updated', handleUserUpdated)
+    }
+  }, [socket, user?.id, setUser])
 
   const formatDate = (value) => {
     if (!value) return 'N/A'

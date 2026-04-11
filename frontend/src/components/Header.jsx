@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { useSocket } from '../contexts/SocketContext'
+import { useSocket } from '../contexts/socketContext'
 
 function Header({ user, onShowAuth, onLogout }) {
   const navigate = useNavigate()

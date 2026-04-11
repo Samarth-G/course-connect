@@ -8,7 +8,7 @@ import ResourcesPage from './pages/ResourcesPage'
 import SessionsPage from './pages/SessionsPage'
 import ProfilePage from './pages/ProfilePage'
 import AdminDashboard from './pages/AdminDashboard'
-import { SocketProvider } from './contexts/SocketContext'
+import { SocketProvider } from './contexts/SocketContext.jsx'
 import './App.css'
 
 const TOKEN_STORAGE_KEY = 'courseconnect_auth_token'
@@ -168,7 +168,10 @@ function AppInner() {
                 />
               }
             />
-            <Route path="/sessions" element={<SessionsPage />} />
+            <Route
+              path="/sessions"
+              element={<SessionsPage user={user} token={token} openAuth={openAuth} />}
+            />
             <Route
               path="/profile"
               element={

@@ -1,4 +1,5 @@
 import { getUserProfileById, loginUser, registerUser, updateUserProfile } from "../services/authService.js";
+import { getIO } from "../socket.js";
 
 const PASSWORD_MIN_LENGTH = 8;
 export async function register(req, res) {
@@ -132,6 +133,10 @@ export async function updateProfile(req, res) {
     if (!updatedUser) {
       return res.status(404).json({ error: "User not found" });
     }
+
+    const io = getIO();
+    if (io) io.emit("user:updated", updatedUser);
+
     return res.status(200).json({ message: "Profile updated", user: updatedUser });
   } catch (error) {
     if (error.code === 11000) {

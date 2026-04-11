@@ -722,6 +722,209 @@
   color: #8f2020;
 }
 
+.sessions-page {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.sessions-toolbar {
+  border: 1px solid #d7d7dc;
+  border-radius: 12px;
+  background: #f4f4f4;
+  padding: 10px 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: end;
+}
+
+.sessions-toolbar-left {
+  display: grid;
+  gap: 4px;
+}
+
+.sessions-control-label {
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #66666d;
+}
+
+.sessions-room-select {
+  border: 1px solid #cfcfd4;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #fff;
+  color: #2d2d32;
+}
+
+.sessions-week-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.sessions-week-controls button {
+  border: 1px solid #b8b8bf;
+  border-radius: 8px;
+  background: #ececee;
+  color: #2a2a2f;
+  padding: 6px 10px;
+}
+
+.sessions-week-controls span {
+  font-size: 0.84rem;
+  color: #4f4f56;
+  margin-left: 4px;
+}
+
+.sessions-calendar-wrap {
+  border: 1px solid #d7d7dc;
+  border-radius: 14px;
+  background: #f7f7f7;
+  overflow: auto;
+}
+
+.sessions-calendar-head {
+  min-width: 1080px;
+  display: grid;
+  grid-template-columns: 70px repeat(7, minmax(130px, 1fr));
+  border-bottom: 1px solid #dbdbe0;
+  background: #f2f2f2;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.sessions-time-gutter,
+.sessions-day-head {
+  padding: 8px;
+  border-right: 1px solid #e1e1e5;
+}
+
+.sessions-time-gutter {
+  font-size: 0.74rem;
+  color: #696971;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.sessions-day-head strong {
+  display: block;
+  font-size: 0.84rem;
+  color: #2f2f35;
+}
+
+.sessions-day-head span {
+  font-size: 0.78rem;
+  color: #67676e;
+}
+
+.sessions-calendar-body {
+  min-width: 1080px;
+  display: grid;
+  grid-template-columns: 70px repeat(7, minmax(130px, 1fr));
+}
+
+.sessions-time-column {
+  position: relative;
+  border-right: 1px solid #dedee3;
+  background: #fafafa;
+}
+
+.sessions-time-column span {
+  position: absolute;
+  right: 8px;
+  transform: translateY(-50%);
+  font-size: 0.72rem;
+  color: #7a7a81;
+}
+
+.sessions-day-column {
+  position: relative;
+  border-right: 1px solid #dedee3;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 59px,
+    #ececf0 59px,
+    #ececf0 60px
+  );
+}
+
+.session-card {
+  position: absolute;
+  left: 5px;
+  right: 5px;
+  border: 1px solid #79c1e2;
+  border-radius: 8px;
+  background: rgba(123, 202, 239, 0.24);
+  padding: 6px;
+  text-align: left;
+  display: grid;
+  gap: 2px;
+  color: #244257;
+  overflow: hidden;
+}
+
+.session-card strong {
+  font-size: 0.75rem;
+  line-height: 1.2;
+}
+
+.session-card span,
+.session-card small {
+  font-size: 0.68rem;
+  line-height: 1.2;
+}
+
+.session-card.active {
+  border-color: #5b4cb8;
+  box-shadow: 0 0 0 1px rgba(91, 76, 184, 0.22);
+}
+
+.sessions-create-panel,
+.sessions-edit-panel {
+  border: 1px solid #d7d7dc;
+  border-radius: 14px;
+  background: #f6f6f6;
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.sessions-create-panel h3,
+.sessions-edit-panel h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.sessions-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.sessions-form-grid input,
+.sessions-form-grid select {
+  width: 100%;
+  border: 1px solid #cfcfd4;
+  border-radius: 10px;
+  padding: 10px 11px;
+  background: #fff;
+  color: #222228;
+  font: inherit;
+}
+
+.sessions-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .placeholder-page {
   flex: 1;
   display: grid;
@@ -893,6 +1096,10 @@
 
   .footer-links {
     grid-column: auto;
+  }
+
+  .sessions-form-grid {
+    grid-template-columns: 1fr;
   }
 }
 

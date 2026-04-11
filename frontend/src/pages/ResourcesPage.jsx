@@ -1,8 +1,13 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import DOMPurify from 'dompurify'
 import Sidebar from '../components/Sidebar'
+import { useSocket } from '../contexts/socketContext'
 
 export default function ResourcesPage({ user, token, courses, selectedCourse, setSelectedCourse, openAuth }) {
+  const { socket, addNotification } = useSocket() || {}
+  const addNotificationRef = useRef(addNotification)
+  useEffect(() => { addNotificationRef.current = addNotification }, [addNotification])
+
   const [resourceSearch, setResourceSearch] = useState('')
   const [resources, setResources] = useState([])
   const [resourcesLoading, setResourcesLoading] = useState(false)
@@ -38,6 +43,55 @@ export default function ResourcesPage({ user, token, courses, selectedCourse, se
     setResourceEditError('')
     setResourceForm({ title: '', type: '', summary: '', resourceFile: null })
   }, [selectedCourse])
+
+  useEffect(() => {
+    if (!socket) return
+
+    const handleResourceCreated = (resource) => {
+      if (!resource?.id || !selectedCourse) return
+      if (String(resource.courseId).toLowerCase() !== String(selectedCourse).toLowerCase()) return
+
+      setResources((prev) => {
+        if (prev.some((existing) => existing.id === resource.id)) return prev
+        return [resource, ...prev]
+      })
+      addNotificationRef.current?.(`New resource: ${resource.title || 'Untitled'}`)
+    }
+
+    const handleResourceUpdated = (resource) => {
+      if (!resource?.id || !selectedCourse) return
+
+      const sameCourse = String(resource.courseId).toLowerCase() === String(selectedCourse).toLowerCase()
+
+      setResources((prev) => {
+        if (!sameCourse) {
+          return prev.filter((existing) => existing.id !== resource.id)
+        }
+        const exists = prev.some((existing) => existing.id === resource.id)
+        if (!exists) return [resource, ...prev]
+        return prev.map((existing) => (existing.id === resource.id ? resource : existing))
+      })
+    }
+
+    const handleResourceDeleted = ({ resourceId, courseId }) => {
+      if (!resourceId || !selectedCourse) return
+      if (String(courseId).toLowerCase() !== String(selectedCourse).toLowerCase()) return
+
+      setResources((prev) => prev.filter((resource) => resource.id !== resourceId))
+      setEditingResourceId((prev) => (prev === resourceId ? '' : prev))
+      setActiveResourceId((prev) => (prev === resourceId ? '' : prev))
+    }
+
+    socket.on('resource:created', handleResourceCreated)
+    socket.on('resource:updated', handleResourceUpdated)
+    socket.on('resource:deleted', handleResourceDeleted)
+
+    return () => {
+      socket.off('resource:created', handleResourceCreated)
+      socket.off('resource:updated', handleResourceUpdated)
+      socket.off('resource:deleted', handleResourceDeleted)
+    }
+  }, [socket, selectedCourse])
 
   async function loadResources(courseId) {
     setResourcesLoading(true)
