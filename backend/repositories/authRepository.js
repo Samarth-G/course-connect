@@ -11,3 +11,7 @@ export async function findUserById(id) {
 export async function createUser(userData) {
   return User.create(userData);
 }
+
+export async function updateUserById(id, updateData) {
+  return User.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
+}

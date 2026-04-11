@@ -30,3 +30,17 @@ export async function findCoursesBySearch(searchTerm = "") {
 
   return Course.find(query).sort({ createdAt: -1 });
 }
+
+export async function updateCourseByCourseId(courseId, updateData) {
+  return Course.findOneAndUpdate(
+    { courseId: { $regex: `^${escapeRegex(String(courseId).trim())}$`, $options: "i" } },
+    updateData,
+    { new: true, runValidators: true },
+  );
+}
+
+export async function deleteCourseByCourseId(courseId) {
+  return Course.findOneAndDelete({
+    courseId: { $regex: `^${escapeRegex(String(courseId).trim())}$`, $options: "i" },
+  });
+}

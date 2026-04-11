@@ -2,6 +2,8 @@ import {
   createCourse,
   findCourseByCourseId,
   findCoursesBySearch,
+  updateCourseByCourseId,
+  deleteCourseByCourseId,
 } from "../repositories/courseRepository.js";
 
 function mapCourse(course) {
@@ -32,4 +34,14 @@ export async function getCourseById(courseId) {
 export async function listCoursesFromDb(searchTerm = "") {
   const courses = await findCoursesBySearch(searchTerm);
   return courses.map((course) => mapCourse(course.toJSON()));
+}
+
+export async function updateCourse(courseId, updateData) {
+  const updated = await updateCourseByCourseId(courseId, updateData);
+  return updated ? mapCourse(updated.toJSON()) : null;
+}
+
+export async function deleteCourse(courseId) {
+  const deleted = await deleteCourseByCourseId(courseId);
+  return Boolean(deleted);
 }
