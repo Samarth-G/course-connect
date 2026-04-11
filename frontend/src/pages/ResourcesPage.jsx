@@ -22,6 +22,28 @@ export default function ResourcesPage({ user, token, courses, selectedCourse, se
   const [resourceEditError, setResourceEditError] = useState('')
   const [resourceEditLoading, setResourceEditLoading] = useState(false)
 
+  async function parseApiResponse(response) {
+    if (response.status === 413) {
+      return {
+        error: 'File too large. Maximum allowed size is 25MB.',
+      }
+    }
+
+    const raw = await response.text()
+    if (!raw) return {}
+
+    try {
+      return JSON.parse(raw)
+    } catch {
+      const titleMatch = raw.match(/<title>([^<]+)<\/title>/i)
+      const headingMatch = raw.match(/<h1[^>]*>([^<]+)<\/h1>/i)
+      const summary = titleMatch?.[1] || headingMatch?.[1] || `Request failed with status ${response.status}`
+      return {
+        error: `Server returned non-JSON response (${response.status}): ${summary}`,
+      }
+    }
+  }
+
   const activeCourse = courses.find((c) => c.id === selectedCourse) || courses[0] || null
 
   useEffect(() => {
@@ -103,7 +125,7 @@ export default function ResourcesPage({ user, token, courses, selectedCourse, se
     try {
       while (true) {
         const response = await fetch(`/api/courses/${encodeURIComponent(courseId)}/resources?limit=${pageSize}&page=${page}`)
-        const data = await response.json()
+        const data = await parseApiResponse(response)
         if (!response.ok) {
           setResources([])
           setResourcesError(data.error || 'Failed to load resources')
@@ -157,7 +179,7 @@ export default function ResourcesPage({ user, token, courses, selectedCourse, se
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
       })
-      const data = await response.json()
+      const data = await parseApiResponse(response)
 
       if (!response.ok) {
         setResourceSubmitError(data.error || 'Failed to create resource')
@@ -254,7 +276,7 @@ export default function ResourcesPage({ user, token, courses, selectedCourse, se
           body: formData,
         }
       )
-      const data = await response.json()
+      const data = await parseApiResponse(response)
 
       if (!response.ok) {
         setResourceEditError(data.error || 'Failed to update resource')
@@ -290,7 +312,7 @@ export default function ResourcesPage({ user, token, courses, selectedCourse, se
           headers: { Authorization: `Bearer ${token}` },
         }
       )
-      const data = await response.json()
+      const data = await parseApiResponse(response)
 
       if (!response.ok) {
         setResourceEditError(data.error || 'Failed to delete resource')

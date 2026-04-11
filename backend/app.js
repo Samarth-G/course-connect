@@ -38,6 +38,12 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api", routers);
 
 app.use((err, _req, res, _next) => {
+	if (err?.code === "LIMIT_FILE_SIZE") {
+		return res.status(413).json({
+			error: "File too large. Maximum allowed size is 25MB.",
+		});
+	}
+
 	console.error("Unhandled error:", err);
 	const status = err.status || 500;
 	res.status(status).json({
