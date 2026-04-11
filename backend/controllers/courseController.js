@@ -1,4 +1,4 @@
-import { getCourseById, listCoursesFromDb, saveCourse } from "../services/courseService.js";
+import { getCourseById, listCoursesFromDb, saveCourse, updateCourse, deleteCourse } from "../services/courseService.js";
 
 const COURSE_ID_MAX_LENGTH = 50;
 const COURSE_TITLE_MAX_LENGTH = 200;
@@ -82,5 +82,55 @@ export async function createCourse(req, res) {
     return res.status(500).json({
       error: "Failed to create course",
     });
+  }
+}
+
+export async function updateCourseHandler(req, res) {
+  const { courseId } = req.params;
+  const { title, description } = req.body;
+  const updateData = {};
+
+  if (title !== undefined) {
+    const normalizedTitle = String(title).trim();
+    if (!normalizedTitle || normalizedTitle.length > COURSE_TITLE_MAX_LENGTH) {
+      return res.status(400).json({ error: `title must be 1-${COURSE_TITLE_MAX_LENGTH} characters` });
+    }
+    updateData.title = normalizedTitle;
+  }
+
+  if (description !== undefined) {
+    const normalizedDescription = String(description).trim();
+    if (normalizedDescription.length > COURSE_DESCRIPTION_MAX_LENGTH) {
+      return res.status(400).json({ error: `description must be ${COURSE_DESCRIPTION_MAX_LENGTH} characters or fewer` });
+    }
+    updateData.description = normalizedDescription;
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    return res.status(400).json({ error: "Provide at least one field to update" });
+  }
+
+  try {
+    const updated = await updateCourse(courseId, updateData);
+    if (!updated) {
+      return res.status(404).json({ error: "Course not found" });
+    }
+    return res.status(200).json({ message: "Course updated", course: updated });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to update course" });
+  }
+}
+
+export async function deleteCourseHandler(req, res) {
+  const { courseId } = req.params;
+
+  try {
+    const deleted = await deleteCourse(courseId);
+    if (!deleted) {
+      return res.status(404).json({ error: "Course not found" });
+    }
+    return res.status(200).json({ message: "Course deleted" });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to delete course" });
   }
 }
