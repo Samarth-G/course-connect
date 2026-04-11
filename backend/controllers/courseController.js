@@ -1,4 +1,5 @@
 import { getCourseById, listCoursesFromDb, saveCourse, updateCourse, deleteCourse } from "../services/courseService.js";
+import { getIO } from "../socket.js";
 
 const COURSE_ID_MAX_LENGTH = 50;
 const COURSE_TITLE_MAX_LENGTH = 200;
@@ -77,6 +78,9 @@ export async function createCourse(req, res) {
       description: normalizedDescription,
     });
 
+    const io = getIO();
+    if (io) io.emit("course:created", createdCourse);
+
     return res.status(201).json(createdCourse);
   } catch (error) {
     return res.status(500).json({
@@ -115,6 +119,10 @@ export async function updateCourseHandler(req, res) {
     if (!updated) {
       return res.status(404).json({ error: "Course not found" });
     }
+
+    const io = getIO();
+    if (io) io.emit("course:updated", updated);
+
     return res.status(200).json({ message: "Course updated", course: updated });
   } catch (error) {
     return res.status(500).json({ error: "Failed to update course" });
@@ -125,10 +133,19 @@ export async function deleteCourseHandler(req, res) {
   const { courseId } = req.params;
 
   try {
+    const existingCourse = await getCourseById(courseId);
+    if (!existingCourse) {
+      return res.status(404).json({ error: "Course not found" });
+    }
+
     const deleted = await deleteCourse(courseId);
     if (!deleted) {
       return res.status(404).json({ error: "Course not found" });
     }
+
+    const io = getIO();
+    if (io) io.emit("course:deleted", { courseId: existingCourse.id });
+
     return res.status(200).json({ message: "Course deleted" });
   } catch (error) {
     return res.status(500).json({ error: "Failed to delete course" });

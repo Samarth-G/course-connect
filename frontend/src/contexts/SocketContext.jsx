@@ -1,9 +1,9 @@
-import { createContext, useContext, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { io } from 'socket.io-client'
-
-const SocketContext = createContext(null)
+import { SocketContext } from './socketContext.js'
 
 export function SocketProvider({ token, children }) {
+  const [socket, setSocket] = useState(null)
   const [notifications, setNotifications] = useState([])
   const socketRef = useRef(null)
 
@@ -16,24 +16,37 @@ export function SocketProvider({ token, children }) {
       return
     }
 
-    const socket = io('/', {
+    const nextSocket = io('/', {
       auth: { token },
       transports: ['websocket', 'polling'],
     })
 
-    socketRef.current = socket
+    socketRef.current = nextSocket
 
-    socket.on('connect', () => {
-      console.log('[socket] connected', socket.id)
-    })
+    const handleConnect = () => {
+      setSocket(nextSocket)
+      console.log('[socket] connected', nextSocket.id)
+    }
 
-    socket.on('disconnect', () => {
+    const handleDisconnect = () => {
+      if (socketRef.current === nextSocket) {
+        setSocket(null)
+      }
       console.log('[socket] disconnected')
-    })
+    }
+
+    nextSocket.on('connect', handleConnect)
+    nextSocket.on('disconnect', handleDisconnect)
 
     return () => {
-      socket.disconnect()
-      socketRef.current = null
+      nextSocket.off('connect', handleConnect)
+      nextSocket.off('disconnect', handleDisconnect)
+      if (socketRef.current === nextSocket) {
+        socketRef.current = null
+      }
+      if (nextSocket) {
+        nextSocket.disconnect()
+      }
     }
   }, [token])
 
@@ -44,12 +57,8 @@ export function SocketProvider({ token, children }) {
   const clearNotifications = () => setNotifications([])
 
   return (
-    <SocketContext.Provider value={{ socket: socketRef.current, notifications, addNotification, clearNotifications }}>
+    <SocketContext.Provider value={{ socket, notifications, addNotification, clearNotifications }}>
       {children}
     </SocketContext.Provider>
   )
-}
-
-export function useSocket() {
-  return useContext(SocketContext)
 }

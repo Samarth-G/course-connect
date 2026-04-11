@@ -8,6 +8,7 @@ import {
 import { unlink } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { getIO } from "../socket.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -218,6 +219,9 @@ export async function createResource(req, res) {
       ...uploadedFile,
     });
 
+    const io = getIO();
+    if (io) io.emit("resource:created", createdResource);
+
     return res.status(201).json(createdResource);
   } catch (error) {
     await removeUploadedFile(uploadedFile?.filePath);
@@ -254,6 +258,14 @@ export async function deleteResource(req, res) {
     }
 
     await removeUploadedFile(existingResource.filePath);
+
+    const io = getIO();
+    if (io) {
+      io.emit("resource:deleted", {
+        resourceId,
+        courseId: existingResource.courseId,
+      });
+    }
 
     return res.status(200).json({
       message: "Resource deleted successfully",
@@ -319,6 +331,9 @@ export async function updateResource(req, res) {
     if (uploadedFile) {
       await removeUploadedFile(existingResource.filePath);
     }
+
+    const io = getIO();
+    if (io) io.emit("resource:updated", updated);
 
     return res.status(200).json({
       message: "Resource updated successfully",
