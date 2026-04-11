@@ -2,24 +2,25 @@ services:
 
   backend:
     build: ./backend
+    platform: linux/amd64
     restart: unless-stopped
     environment:
-      PORT: ${PORT:-5050}
-      MONGODB_URI: ${MONGODB_URI}
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
-      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost}
+      PORT: 5050
+      MONGODB_URI: mongodb+srv://samarthgrover8_db_user:nXCeTe6UldUgRd4d@cluster0.iuz42bz.mongodb.net/?appName=Cluster0
+      JWT_SECRET: 6982523gsjgfsegfiwe2r92364623
+      JWT_EXPIRES_IN: 7d
+      FRONTEND_ORIGIN: http://localhost:4000
       NODE_ENV: production
-      # Set to "true" to populate the DB with demo data on first run
-      SEED_DATABASE: ${SEED_DATABASE:-false}
+      SEED_DATABASE: "true"
     volumes:
       - uploads_data:/app/uploads
 
   frontend:
     build: ./frontend
+    platform: linux/amd64
     restart: unless-stopped
     ports:
-      - "${APP_PORT:-80}:80"
+      - "4000:80"
     depends_on:
       - backend
 
