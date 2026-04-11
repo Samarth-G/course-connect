@@ -5,10 +5,11 @@ import Course from "../models/courseModel.js";
 import Thread from "../models/threadModel.js";
 import User from "../models/userModel.js";
 import Resource from "../models/resourceModel.js";
+import Session from "../models/sessionModel.js";
 import { findUserByEmail, createUser } from "../repositories/authRepository.js";
 import { findThreadsByCourseAndTitlePairs, insertManyThreads } from "../repositories/courseThreadRepository.js";
 
-const DEMO_USER_EMAIL = "demo@course-connect.local";
+const DEMO_USER_EMAIL = "demo@courseconnect.local";
 const DEMO_USER_PASSWORD = "Password123!";
 const ADMIN_USER_EMAIL = "admin@courseconnect.local";
 const ADMIN_USER_PASSWORD = "Admin123!";
@@ -167,5 +168,83 @@ export async function seedDatabase() {
     console.log(`Seeded ${resourceDocuments.length} resource(s)`);
   } else {
     console.log("No new resources to seed");
+  }
+
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const day = now.getDay();
+  const distanceToMonday = day === 0 ? 6 : day - 1;
+  const monday = new Date(now);
+  monday.setDate(monday.getDate() - distanceToMonday);
+
+  const nextMonday = new Date(monday);
+  nextMonday.setDate(nextMonday.getDate() + 7);
+
+  function buildDateTime(dayOffset, hour, minute) {
+    const d = new Date(monday);
+    d.setDate(d.getDate() + dayOffset);
+    d.setHours(hour, minute, 0, 0);
+    return d;
+  }
+
+  function toSessionKey(session) {
+    return `${String(session.room).toLowerCase()}::${String(session.title).toLowerCase()}::${new Date(session.startAt).getTime()}::${new Date(session.endAt).getTime()}`;
+  }
+
+  const demoSessions = [
+    {
+      room: "Room 117",
+      title: "COSC 320 Midterm Review",
+      startAt: buildDateTime(1, 16, 0),
+      endAt: buildDateTime(1, 17, 30),
+    },
+    {
+      room: "Room 117",
+      title: "Algorithms Practice",
+      startAt: buildDateTime(2, 18, 0),
+      endAt: buildDateTime(2, 19, 30),
+    },
+    {
+      room: "Room 204",
+      title: "Database Project Work",
+      startAt: buildDateTime(3, 17, 0),
+      endAt: buildDateTime(3, 18, 0),
+    },
+    {
+      room: "Room 312",
+      title: "Group Assignment Sync",
+      startAt: buildDateTime(4, 19, 0),
+      endAt: buildDateTime(4, 20, 0),
+    },
+    {
+      room: "Room 204",
+      title: "Final Exam Q&A",
+      startAt: buildDateTime(5, 16, 30),
+      endAt: buildDateTime(5, 18, 0),
+    },
+  ].map((session) => ({
+    ...session,
+    authorId: demoUser.id,
+    authorName: demoUser.name,
+    authorProfileImage: demoUser.profileImage || "",
+  }));
+
+  const existingWeekSessions = await Session.find(
+    {
+      startAt: { $gte: monday, $lt: nextMonday },
+      room: { $in: demoSessions.map((session) => session.room) },
+      title: { $in: demoSessions.map((session) => session.title) },
+    },
+    { room: 1, title: 1, startAt: 1, endAt: 1 }
+  ).lean();
+
+  const existingSessionKeys = new Set(existingWeekSessions.map(toSessionKey));
+  const sessionsToInsert = demoSessions.filter((session) => !existingSessionKeys.has(toSessionKey(session)));
+
+  if (sessionsToInsert.length > 0) {
+    await Session.insertMany(sessionsToInsert);
+    console.log(`Seeded ${sessionsToInsert.length} study session(s) for current week`);
+  } else {
+    console.log("No new study sessions to seed for current week");
   }
 }
