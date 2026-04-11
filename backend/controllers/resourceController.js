@@ -2,6 +2,7 @@ import {
   searchResourcesByCourseId as searchResourcesByCourseIdFromService,
   getResourceById as getResourceByIdFromService,
   saveResource,
+  updateResourceById,
   deleteResourceById,
 } from "../services/resourceService.js";
 import { unlink } from "node:fs/promises";
@@ -38,6 +39,60 @@ async function removeUploadedFile(filePathValue) {
   } catch {
     //ignore
   }
+}
+
+function buildResourceUpdatePayload(body) {
+  const payload = {};
+
+  if (body.title !== undefined) {
+    if (typeof body.title !== "string") {
+      return { error: "title must be a string" };
+    }
+
+    const normalizedTitle = body.title.trim();
+    if (!normalizedTitle) {
+      return { error: "title cannot be empty" };
+    }
+    if (normalizedTitle.length > TITLE_MAX_LENGTH) {
+      return { error: `title must be ${TITLE_MAX_LENGTH} characters or fewer` };
+    }
+
+    payload.title = normalizedTitle;
+  }
+
+  if (body.type !== undefined) {
+    if (typeof body.type !== "string") {
+      return { error: "type must be a string" };
+    }
+
+    const normalizedType = body.type.trim();
+    if (!normalizedType) {
+      return { error: "type cannot be empty" };
+    }
+    if (normalizedType.length > TYPE_MAX_LENGTH) {
+      return { error: `type must be ${TYPE_MAX_LENGTH} characters or fewer` };
+    }
+
+    payload.type = normalizedType;
+  }
+
+  if (body.summary !== undefined) {
+    if (typeof body.summary !== "string") {
+      return { error: "summary must be a string" };
+    }
+
+    const normalizedSummary = body.summary.trim();
+    if (!normalizedSummary) {
+      return { error: "summary cannot be empty" };
+    }
+    if (normalizedSummary.length > SUMMARY_MAX_LENGTH) {
+      return { error: `summary must be ${SUMMARY_MAX_LENGTH} characters or fewer` };
+    }
+
+    payload.summary = normalizedSummary;
+  }
+
+  return { updatePayload: payload };
 }
 
 export async function searchResourcesByCourseId(req, res) {
@@ -184,6 +239,12 @@ export async function deleteResource(req, res) {
       });
     }
 
+    if (existingResource.uploaderId !== String(req.user?.id ?? "") && req.user?.role !== "admin") {
+      return res.status(403).json({
+        error: "You can only delete your own resources",
+      });
+    }
+
     const deleted = await deleteResourceById(resourceId);
 
     if (!deleted) {
@@ -200,6 +261,73 @@ export async function deleteResource(req, res) {
   } catch (error) {
     return res.status(500).json({
       error: "Failed to delete resource",
+    });
+  }
+}
+
+export async function updateResource(req, res) {
+  const { resourceId } = req.params;
+  const uploadedFile = getUploadedFileData(req.file);
+
+  try {
+    const existingResource = await getResourceByIdFromService(resourceId);
+
+    if (!existingResource) {
+      await removeUploadedFile(uploadedFile?.filePath);
+      return res.status(404).json({
+        error: "Resource not found",
+      });
+    }
+
+    if (existingResource.uploaderId !== String(req.user?.id ?? "") && req.user?.role !== "admin") {
+      await removeUploadedFile(uploadedFile?.filePath);
+      return res.status(403).json({
+        error: "You can only edit your own resources",
+      });
+    }
+
+    const updateResult = buildResourceUpdatePayload(req.body ?? {});
+    if (updateResult.error) {
+      await removeUploadedFile(uploadedFile?.filePath);
+      return res.status(400).json({
+        error: updateResult.error,
+      });
+    }
+
+    if (Object.keys(updateResult.updatePayload).length === 0 && !uploadedFile) {
+      return res.status(400).json({
+        error: "Provide at least one field to update",
+      });
+    }
+
+    if (uploadedFile) {
+      updateResult.updatePayload.filePath = uploadedFile.filePath;
+      updateResult.updatePayload.fileName = uploadedFile.fileName;
+      updateResult.updatePayload.fileSize = uploadedFile.fileSize;
+      updateResult.updatePayload.mimeType = uploadedFile.mimeType;
+    }
+
+    const updated = await updateResourceById(resourceId, updateResult.updatePayload);
+
+    if (!updated) {
+      await removeUploadedFile(uploadedFile?.filePath);
+      return res.status(404).json({
+        error: "Resource not found",
+      });
+    }
+
+    if (uploadedFile) {
+      await removeUploadedFile(existingResource.filePath);
+    }
+
+    return res.status(200).json({
+      message: "Resource updated successfully",
+      resource: updated,
+    });
+  } catch (error) {
+    await removeUploadedFile(uploadedFile?.filePath);
+    return res.status(500).json({
+      error: "Failed to update resource",
     });
   }
 }

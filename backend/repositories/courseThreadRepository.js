@@ -43,6 +43,55 @@ export async function addReplyToThreadByCourseAndId(courseId, threadId, replyDat
   );
 }
 
+export async function findReplyByCourseThreadAndId(courseId, threadId, replyId) {
+  const thread = await Thread.findOne(
+    {
+      _id: threadId,
+      courseId: { $regex: `^${escapeRegex(String(courseId).trim())}$`, $options: "i" },
+      "replies._id": replyId,
+    },
+    { replies: { $elemMatch: { _id: replyId } } },
+  );
+
+  return thread?.replies?.[0] || null;
+}
+
+export async function updateReplyByCourseThreadAndId(courseId, threadId, replyId, updateData) {
+  const fieldsToSet = {};
+
+  if (updateData.body !== undefined) {
+    fieldsToSet["replies.$.body"] = updateData.body;
+  }
+
+  return Thread.findOneAndUpdate(
+    {
+      _id: threadId,
+      courseId: { $regex: `^${escapeRegex(String(courseId).trim())}$`, $options: "i" },
+      "replies._id": replyId,
+    },
+    {
+      $set: fieldsToSet,
+    },
+    { returnDocument: "after", runValidators: true },
+  );
+}
+
+export async function deleteReplyByCourseThreadAndId(courseId, threadId, replyId) {
+  return Thread.findOneAndUpdate(
+    {
+      _id: threadId,
+      courseId: { $regex: `^${escapeRegex(String(courseId).trim())}$`, $options: "i" },
+      "replies._id": replyId,
+    },
+    {
+      $pull: {
+        replies: { _id: replyId },
+      },
+    },
+    { returnDocument: "after", runValidators: true },
+  );
+}
+
 export async function aggregateCourses() {
   return Thread.aggregate([
     {

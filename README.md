@@ -8,25 +8,29 @@ Built with the MERN stack (MongoDB, Express, React, Node.js) for COSC 360.
 - **Samarth Grover** – Backend (Node.js, Express, REST API, MongoDB)
 - **Michael Montgomery** – Frontend (React, UI/UX)
 
-## Getting Started
+## Docker
 
-Start the backend and frontend in separate terminals.
+Run the app with Docker Compose.
 
-### Frontend
+1. Make sure the root `.env` file exists and has `MONGODB_URI` and `JWT_SECRET` set.
+2. Start the stack:
+
 ```bash
-cd frontend
-npm install
-npm run dev
+docker compose up --build
 ```
 
-### Backend
-```bash
-cd backend
-npm install
-npm run dev
-```
+By default, the frontend is exposed on port `80` and the backend runs on port `5050` inside the compose network.
+Open the app at http://localhost
 
-Backend defaults to `http://localhost:5000` and frontend dev server defaults to `http://localhost:5173`.
+
+Optional environment overrides supported by `docker-compose.yml`:
+- `PORT` for the backend container
+- `APP_PORT` for the frontend host port
+- `JWT_EXPIRES_IN`
+- `FRONTEND_ORIGIN`
+- `SEED_DATABASE` to populate demo data on first run
+
+The older separate backend/frontend startup flow is no longer part of the documented setup.
 
 ## Features
 - Browse courses and discussion threads

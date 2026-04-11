@@ -1,9 +1,13 @@
 import {
   addReplyToCourseThreadById,
+  deleteCourseThreadReplyById,
   deleteCourseThreadById,
   getCourseThreadById,
+  getCourseThreadReplyById,
   listCoursesFromDb,
+  listCourseThreadRepliesById,
   saveCourseThread,
+  updateCourseThreadReplyById,
   updateCourseThreadById,
   searchCourseThreadsFromDb,
 } from "../services/courseThreadService.js";
@@ -100,6 +104,27 @@ function buildReplyPayload(body) {
       authorId: normalizedAuthorId,
       authorName: normalizedAuthorName,
       authorProfileImage: normalizedAuthorProfileImage,
+    },
+  };
+}
+
+function buildReplyUpdatePayload(body) {
+  if (typeof body.body !== "string") {
+    return { error: "body must be a string" };
+  }
+
+  const normalizedBody = body.body.trim();
+  if (!normalizedBody) {
+    return { error: "body cannot be empty" };
+  }
+
+  if (normalizedBody.length > REPLY_BODY_MAX_LENGTH) {
+    return { error: `body must be ${REPLY_BODY_MAX_LENGTH} characters or fewer` };
+  }
+
+  return {
+    updatePayload: {
+      body: normalizedBody,
     },
   };
 }
@@ -374,6 +399,151 @@ export async function addCourseThreadReply(req, res) {
   } catch (error) {
     return res.status(500).json({
       error: "Failed to add reply",
+    });
+  }
+}
+
+export async function listCourseThreadReplies(req, res) {
+  const { courseId, threadId } = req.params;
+
+  try {
+    const replies = await listCourseThreadRepliesById(courseId, threadId);
+
+    if (!replies) {
+      return res.status(404).json({
+        error: "Thread not found",
+      });
+    }
+
+    return res.status(200).json({
+      count: replies.length,
+      replies,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      error: "Failed to fetch replies",
+    });
+  }
+}
+
+export async function getCourseThreadReply(req, res) {
+  const { courseId, threadId, replyId } = req.params;
+
+  try {
+    const reply = await getCourseThreadReplyById(courseId, threadId, replyId);
+
+    if (!reply) {
+      return res.status(404).json({
+        error: "Reply not found",
+      });
+    }
+
+    return res.status(200).json({ reply });
+  } catch (error) {
+    return res.status(500).json({
+      error: "Failed to fetch reply",
+    });
+  }
+}
+
+export async function updateCourseThreadReply(req, res) {
+  const { courseId, threadId, replyId } = req.params;
+
+  try {
+    const existingReply = await getCourseThreadReplyById(courseId, threadId, replyId);
+
+    if (!existingReply) {
+      return res.status(404).json({
+        error: "Reply not found",
+      });
+    }
+
+    if (existingReply.authorId !== String(req.user?.id ?? "") && req.user?.role !== "admin") {
+      return res.status(403).json({
+        error: "You can only edit your own replies",
+      });
+    }
+
+    const updateResult = buildReplyUpdatePayload(req.body ?? {});
+    if (updateResult.error) {
+      return res.status(400).json({
+        error: updateResult.error,
+      });
+    }
+
+    const updatedThread = await updateCourseThreadReplyById(
+      courseId,
+      threadId,
+      replyId,
+      updateResult.updatePayload,
+    );
+
+    if (!updatedThread) {
+      return res.status(404).json({
+        error: "Reply not found",
+      });
+    }
+
+    const updatedReply = updatedThread.replies?.find(
+      (reply) => String(reply.id ?? reply._id ?? "") === String(replyId),
+    );
+
+    if (!updatedReply) {
+      return res.status(404).json({
+        error: "Reply not found",
+      });
+    }
+
+    const io = getIO();
+    if (io) io.emit("reply:updated", { thread: updatedThread, reply: updatedReply });
+
+    return res.status(200).json({
+      message: "Reply updated successfully",
+      reply: updatedReply,
+      thread: updatedThread,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      error: "Failed to update reply",
+    });
+  }
+}
+
+export async function deleteCourseThreadReply(req, res) {
+  const { courseId, threadId, replyId } = req.params;
+
+  try {
+    const existingReply = await getCourseThreadReplyById(courseId, threadId, replyId);
+
+    if (!existingReply) {
+      return res.status(404).json({
+        error: "Reply not found",
+      });
+    }
+
+    if (existingReply.authorId !== String(req.user?.id ?? "") && req.user?.role !== "admin") {
+      return res.status(403).json({
+        error: "You can only delete your own replies",
+      });
+    }
+
+    const deleted = await deleteCourseThreadReplyById(courseId, threadId, replyId);
+
+    if (!deleted) {
+      return res.status(404).json({
+        error: "Reply not found",
+      });
+    }
+
+    const io = getIO();
+    if (io) io.emit("reply:deleted", { courseId, threadId, replyId });
+
+    return res.status(200).json({
+      message: "Reply deleted successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      error: "Failed to delete reply",
     });
   }
 }

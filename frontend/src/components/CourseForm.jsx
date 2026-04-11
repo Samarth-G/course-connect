@@ -4,6 +4,7 @@ export default function CourseForm({ token, onCreated }) {
   const [formData, setFormData] = useState({
     courseId: '',
     title: '',
+    description: '',
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -12,6 +13,7 @@ export default function CourseForm({ token, onCreated }) {
     setFormData({
       courseId: '',
       title: '',
+      description: '',
     })
   }, [])
 
@@ -37,6 +39,7 @@ export default function CourseForm({ token, onCreated }) {
     try {
       const courseId = formData.courseId.trim()
       const title = formData.title.trim()
+      const description = formData.description.trim()
 
       if (!courseId || !title) {
         setError('All fields are required')
@@ -52,6 +55,7 @@ export default function CourseForm({ token, onCreated }) {
         body: JSON.stringify({
           courseId,
           title,
+          description,
         }),
       })
 
@@ -65,6 +69,7 @@ export default function CourseForm({ token, onCreated }) {
       setFormData({
         courseId: '',
         title: '',
+        description: '',
       })
 
       if (typeof onCreated === 'function') {
@@ -106,6 +111,14 @@ export default function CourseForm({ token, onCreated }) {
             required
           />
         </div>
+
+        <textarea
+          name="description"
+          value={formData.description}
+          onChange={handleInputChange}
+          placeholder="Course description (optional)"
+          rows={4}
+        />
 
         {error && <p className="panel-message panel-error">{error}</p>}
 
