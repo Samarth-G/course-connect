@@ -3,6 +3,7 @@ import {
   searchUsersService,
   toggleUser,
 } from "../services/adminService.js";
+import { getIO } from "../socket.js";
 
 export async function getUsers(req, res) {
   const { q = "", page = "1", limit = "20" } = req.query;
@@ -37,6 +38,10 @@ export async function toggleUserStatus(req, res) {
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
+
+    const io = getIO();
+    if (io) io.emit("user:toggled", user);
+
     return res.status(200).json({ message: `User ${user.enabled ? "enabled" : "disabled"}`, user });
   } catch (error) {
     return res.status(500).json({ error: "Failed to toggle user status" });

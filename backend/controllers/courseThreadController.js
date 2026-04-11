@@ -7,6 +7,7 @@ import {
   updateCourseThreadById,
   searchCourseThreadsFromDb,
 } from "../services/courseThreadService.js";
+import { getIO } from "../socket.js";
 
 const TITLE_MAX_LENGTH = 200;
 const BODY_MAX_LENGTH = 5000;
@@ -216,6 +217,9 @@ export async function createCourseThread(req, res) {
       tags: normalizedTags,
     });
 
+    const io = getIO();
+    if (io) io.emit("thread:created", newThread);
+
     return res
       .status(201)
       .location(`/api/courses/${courseId}/threads/${newThread.id}`)
@@ -283,6 +287,9 @@ export async function updateCourseThread(req, res) {
       });
     }
 
+    const io = getIO();
+    if (io) io.emit("thread:updated", updatedThread);
+
     return res.status(200).json({
       message: "Thread updated successfully",
       thread: updatedThread,
@@ -320,6 +327,9 @@ export async function deleteCourseThread(req, res) {
       });
     }
 
+    const io = getIO();
+    if (io) io.emit("thread:deleted", { courseId, threadId });
+
     return res.status(200).json({
       message: "Thread deleted successfully",
     });
@@ -353,6 +363,9 @@ export async function addCourseThreadReply(req, res) {
         error: "Thread not found",
       });
     }
+
+    const io = getIO();
+    if (io) io.emit("reply:added", updatedThread);
 
     return res.status(201).json({
       message: "Reply added successfully",
