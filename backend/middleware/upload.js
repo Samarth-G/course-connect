@@ -1,5 +1,6 @@
 import multer from "multer";
 import path from "path";
+import { PROFILE_IMAGE_MAX_BYTES } from "../config/uploadLimits.js";
 
 const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/gif"];
 
@@ -25,5 +26,5 @@ function fileFilter(_req, file, cb) {
 export const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+  limits: { fileSize: PROFILE_IMAGE_MAX_BYTES }, // 5 MB
 });

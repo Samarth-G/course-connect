@@ -5,6 +5,7 @@ import { fileURLToPath } from "url";
 import rateLimit from "express-rate-limit";
 import routers from "./routers/index.js";
 import { sanitizeBody } from "./middleware/sanitize.js";
+import { PROFILE_IMAGE_MAX_BYTES, RESOURCE_MAX_BYTES, bytesToMB } from "./config/uploadLimits.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -37,10 +38,14 @@ app.use("/api/auth", rateLimit({
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api", routers);
 
-app.use((err, _req, res, _next) => {
+app.use((err, req, res, _next) => {
 	if (err?.code === "LIMIT_FILE_SIZE") {
+		const field = String(err.field || "");
+		const isProfileImageUpload = field === "profileImage" || req.originalUrl?.startsWith("/api/auth/");
+		const maxAllowedSize = isProfileImageUpload ? bytesToMB(PROFILE_IMAGE_MAX_BYTES) : bytesToMB(RESOURCE_MAX_BYTES);
+
 		return res.status(413).json({
-			error: "File too large. Maximum allowed size is 25MB.",
+			error: `File too large. Maximum allowed size is ${maxAllowedSize}.`,
 		});
 	}
 
