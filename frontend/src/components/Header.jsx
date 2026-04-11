@@ -1,9 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { useSocket } from '../contexts/socketContext'
 
 function Header({ user, onShowAuth, onLogout }) {
   const navigate = useNavigate()
-  const { notifications, clearNotifications } = useSocket() || {}
   const showAuthButtons = !user
 
   const avatarUrl = user?.profileImage
@@ -37,12 +35,6 @@ function Header({ user, onShowAuth, onLogout }) {
       </nav>
 
       <div className="topbar-right">
-        {notifications && notifications.length > 0 && (
-          <button type="button" className="notification-badge" onClick={clearNotifications} title="Clear notifications">
-            {notifications.length}
-          </button>
-        )}
-
         {showAuthButtons && (
           <>
             <button type="button" className="auth-chip" onClick={() => onShowAuth?.('login')}>

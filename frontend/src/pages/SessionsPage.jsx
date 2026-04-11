@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import DOMPurify from 'dompurify'
 import { useSocket } from '../contexts/socketContext'
 
@@ -63,9 +63,7 @@ function clamp(value, minimum, maximum) {
 }
 
 export default function SessionsPage({ user, token, openAuth }) {
-  const { socket, addNotification } = useSocket() || {}
-  const addNotificationRef = useRef(addNotification)
-  useEffect(() => { addNotificationRef.current = addNotification }, [addNotification])
+  const { socket } = useSocket() || {}
 
   const [rooms, setRooms] = useState(['Room 117'])
   const [selectedRoom, setSelectedRoom] = useState('Room 117')
@@ -172,7 +170,6 @@ export default function SessionsPage({ user, token, openAuth }) {
     const handleSessionCreated = (session) => {
       if (String(session?.room || '').toLowerCase() !== selectedRoom.toLowerCase()) return
       loadSessions(selectedRoom, weekStartDate)
-      addNotificationRef.current?.(`New session: ${session.title}`)
     }
 
     const handleSessionUpdated = (session) => {

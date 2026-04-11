@@ -1130,22 +1130,6 @@ a.nav-chip {
   font-weight: 600;
 }
 
-/* --- Notification badge --- */
-.notification-badge {
-  border: none;
-  background: #7c3aed;
-  color: #fff;
-  border-radius: 999px;
-  min-width: 22px;
-  height: 22px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  display: grid;
-  place-items: center;
-  padding: 0 5px;
-  cursor: pointer;
-}
-
 /* --- Header profile button --- */
 .header-profile-btn {
   border: none;

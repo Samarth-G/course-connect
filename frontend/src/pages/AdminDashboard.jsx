@@ -1,11 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import DOMPurify from 'dompurify'
 import { useSocket } from '../contexts/socketContext'
 
 export default function AdminDashboard({ user, token }) {
-  const { socket, addNotification } = useSocket() || {}
-  const addNotificationRef = useRef(addNotification)
-  useEffect(() => { addNotificationRef.current = addNotification }, [addNotification])
+  const { socket } = useSocket() || {}
 
   const [users, setUsers] = useState([])
   const [userSearch, setUserSearch] = useState('')
@@ -82,7 +80,6 @@ export default function AdminDashboard({ user, token }) {
       if (!normalizedUserId || typeof normalizedEnabled !== 'boolean') return
 
       setUsers((prev) => prev.map((u) => (u.id === normalizedUserId ? { ...u, enabled: normalizedEnabled } : u)))
-      addNotificationRef.current?.(`User ${normalizedEnabled ? 'enabled' : 'disabled'}`)
     }
     const handleUserUpdated = (updatedUser) => {
       if (!updatedUser?.id) return

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import DOMPurify from 'dompurify'
 import CourseCard from '../components/CourseCard'
@@ -6,9 +6,7 @@ import CourseForm from '../components/CourseForm'
 import { useSocket } from '../contexts/socketContext'
 
 export default function CoursesPage({ user, token, courses, setCourses, setSelectedCourse, openAuth }) {
-  const { socket, addNotification } = useSocket() || {}
-  const addNotificationRef = useRef(addNotification)
-  useEffect(() => { addNotificationRef.current = addNotification }, [addNotification])
+  const { socket } = useSocket() || {}
 
   const navigate = useNavigate()
   const isAdmin = user?.role === 'admin'
@@ -69,7 +67,6 @@ export default function CoursesPage({ user, token, courses, setCourses, setSelec
         if (prev.some((existing) => existing.id === course.id)) return prev
         return [course, ...prev]
       })
-      addNotificationRef.current?.(`New course: ${course.title || course.label || course.id}`)
     }
 
     const handleCourseUpdated = (course) => {

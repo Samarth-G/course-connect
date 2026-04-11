@@ -1,12 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import DOMPurify from 'dompurify'
 import Sidebar from '../components/Sidebar'
 import { useSocket } from '../contexts/socketContext'
 
 export default function ResourcesPage({ user, token, courses, selectedCourse, setSelectedCourse, openAuth }) {
-  const { socket, addNotification } = useSocket() || {}
-  const addNotificationRef = useRef(addNotification)
-  useEffect(() => { addNotificationRef.current = addNotification }, [addNotification])
+  const { socket } = useSocket() || {}
 
   const [resourceSearch, setResourceSearch] = useState('')
   const [resources, setResources] = useState([])
@@ -55,7 +53,6 @@ export default function ResourcesPage({ user, token, courses, selectedCourse, se
         if (prev.some((existing) => existing.id === resource.id)) return prev
         return [resource, ...prev]
       })
-      addNotificationRef.current?.(`New resource: ${resource.title || 'Untitled'}`)
     }
 
     const handleResourceUpdated = (resource) => {

@@ -1,13 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import DOMPurify from 'dompurify'
 import Sidebar from '../components/Sidebar'
 import ThreadForm from '../components/ThreadForm'
 import { useSocket } from '../contexts/socketContext'
 
 export default function ThreadsPage({ user, token, courses, selectedCourse, setSelectedCourse, openAuth }) {
-  const { socket, addNotification } = useSocket() || {}
-  const addNotificationRef = useRef(addNotification)
-  useEffect(() => { addNotificationRef.current = addNotification }, [addNotification])
+  const { socket } = useSocket() || {}
 
   const [threadSearch, setThreadSearch] = useState('')
   const [threads, setThreads] = useState([])
@@ -56,7 +54,6 @@ export default function ThreadsPage({ user, token, courses, selectedCourse, setS
     const handleThreadCreated = (thread) => {
       if (thread.courseId === selectedCourse) {
         setThreads((prev) => [thread, ...prev])
-        addNotificationRef.current?.(`New thread: ${thread.title}`)
       }
     }
     const handleThreadUpdated = (thread) => {
@@ -69,7 +66,6 @@ export default function ThreadsPage({ user, token, courses, selectedCourse, setS
     const handleReplyAdded = ({ thread }) => {
       if (thread) {
         setThreads((prev) => prev.map((t) => (t.id === thread.id ? thread : t)))
-        addNotificationRef.current?.('New reply added')
       }
     }
     const handleReplyUpdated = ({ thread }) => {
