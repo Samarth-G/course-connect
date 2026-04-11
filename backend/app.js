@@ -39,8 +39,12 @@ app.use("/api", routers);
 
 app.use((err, _req, res, _next) => {
 	if (err?.code === "LIMIT_FILE_SIZE") {
+		const field = String(err.field || "");
+		const isProfileImageUpload = field === "profileImage" || _req.originalUrl?.startsWith("/api/auth/");
+		const maxAllowedSize = isProfileImageUpload ? "5MB" : "25MB";
+
 		return res.status(413).json({
-			error: "File too large. Maximum allowed size is 25MB.",
+			error: `File too large. Maximum allowed size is ${maxAllowedSize}.`,
 		});
 	}
 
