@@ -23,6 +23,12 @@ export default function ResourcesPage({ user, token, courses, selectedCourse, se
   const [resourceEditLoading, setResourceEditLoading] = useState(false)
 
   async function parseApiResponse(response) {
+    if (response.status === 413) {
+      return {
+        error: 'File too large. Maximum allowed size is 25MB.',
+      }
+    }
+
     const raw = await response.text()
     if (!raw) return {}
 
