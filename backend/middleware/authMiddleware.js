@@ -1,7 +1,8 @@
 import jwt from "jsonwebtoken";
 import { JWT_SECRET_KEY } from "../config/jwtConfig.js";
+import User from "../models/userModel.js";
 
-export function requireAuth(req, res, next) {
+export async function requireAuth(req, res, next) {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -14,11 +15,22 @@ export function requireAuth(req, res, next) {
 
   try {
     const payload = jwt.verify(token, JWT_SECRET_KEY);
+
+    const user = await User.findById(payload.sub);
+    if (!user) {
+      return res.status(401).json({ error: "User not found" });
+    }
+
+    if (!user.enabled) {
+      return res.status(403).json({ error: "Account is disabled" });
+    }
+
     req.user = {
       id: payload.sub,
-      email: payload.email,
-      name: payload.name,
-      profileImage: payload.profileImage || "",
+      email: user.email,
+      name: user.name,
+      profileImage: user.profileImage || "",
+      role: user.role || "user",
     };
     return next();
   } catch (error) {

@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { createUser, findUserByEmail, findUserById } from "../repositories/authRepository.js";
+import { createUser, findUserByEmail, findUserById, updateUserById } from "../repositories/authRepository.js";
 import { JWT_SECRET_KEY, JWT_EXPIRES_IN } from "../config/jwtConfig.js";
 
 function buildTokenPayload(user) {
@@ -9,6 +9,7 @@ function buildTokenPayload(user) {
     email: user.email,
     name: user.name,
     profileImage: user.profileImage || "",
+    role: user.role || "user",
   };
 }
 
@@ -46,6 +47,10 @@ export async function loginUser({ email, password }) {
     return { errorCode: "INVALID_CREDENTIALS" };
   }
 
+  if (!user.enabled) {
+    return { errorCode: "ACCOUNT_DISABLED" };
+  }
+
   const passwordMatches = await bcrypt.compare(password, user.passwordHash);
   if (!passwordMatches) {
     return { errorCode: "INVALID_CREDENTIALS" };
@@ -62,4 +67,9 @@ export async function loginUser({ email, password }) {
 export async function getUserProfileById(id) {
   const user = await findUserById(id);
   return user ? user.toJSON() : null;
+}
+
+export async function updateUserProfile(id, updateData) {
+  const updated = await updateUserById(id, updateData);
+  return updated ? updated.toJSON() : null;
 }
