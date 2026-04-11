@@ -6,10 +6,15 @@ import CourseForm from '../components/CourseForm'
 
 export default function CoursesPage({ user, token, courses, setCourses, selectedCourse, setSelectedCourse, openAuth }) {
   const navigate = useNavigate()
+  const isAdmin = user?.role === 'admin'
   const [courseSearch, setCourseSearch] = useState('')
   const [coursesLoading, setCoursesLoading] = useState(false)
   const [coursesError, setCoursesError] = useState('')
   const [showNewCourseForm, setShowNewCourseForm] = useState(false)
+  const [editingCourseId, setEditingCourseId] = useState('')
+  const [courseEditForm, setCourseEditForm] = useState({ title: '', description: '' })
+  const [courseActionError, setCourseActionError] = useState('')
+  const [courseActionLoading, setCourseActionLoading] = useState(false)
 
   useEffect(() => {
     loadCourses('')
@@ -61,8 +66,76 @@ export default function CoursesPage({ user, token, courses, setCourses, selected
   const handleCourseCreated = async (course) => {
     setShowNewCourseForm(false)
     setCourseSearch('')
+    setCourseActionError('')
     await loadCourses('')
     if (course?.id) setSelectedCourse(course.id)
+  }
+
+  async function handleCourseDelete(courseId) {
+    if (!token || !isAdmin) return
+    setCourseActionLoading(true)
+    setCourseActionError('')
+
+    try {
+      const response = await fetch(`/api/courses/${encodeURIComponent(courseId)}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const data = await response.json()
+
+      if (!response.ok) {
+        setCourseActionError(data.error || 'Failed to delete course')
+        return
+      }
+
+      setEditingCourseId('')
+      await loadCourses(courseSearch)
+    } catch (error) {
+      setCourseActionError(error.message || 'Unexpected network error')
+    } finally {
+      setCourseActionLoading(false)
+    }
+  }
+
+  async function handleCourseEditSubmit(event) {
+    event.preventDefault()
+    if (!token || !isAdmin || !editingCourseId) return
+
+    const payload = {}
+    if (courseEditForm.title.trim()) payload.title = DOMPurify.sanitize(courseEditForm.title.trim())
+    payload.description = DOMPurify.sanitize(courseEditForm.description.trim())
+
+    if (!payload.title && payload.description === '') {
+      setCourseActionError('Provide at least a title or description to update')
+      return
+    }
+
+    setCourseActionLoading(true)
+    setCourseActionError('')
+
+    try {
+      const response = await fetch(`/api/courses/${encodeURIComponent(editingCourseId)}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      })
+      const data = await response.json()
+
+      if (!response.ok) {
+        setCourseActionError(data.error || 'Failed to update course')
+        return
+      }
+
+      setEditingCourseId('')
+      await loadCourses(courseSearch)
+    } catch (error) {
+      setCourseActionError(error.message || 'Unexpected network error')
+    } finally {
+      setCourseActionLoading(false)
+    }
   }
 
   return (
@@ -85,23 +158,57 @@ export default function CoursesPage({ user, token, courses, setCourses, selected
               placeholder="Find A Course (e.g. COSC 320)"
             />
           </label>
-          <button
-            type="button"
-            className="new-thread-button courses-new-button"
-            onClick={() => {
-              if (!user || !token) { openAuth('login'); return }
-              setShowNewCourseForm((prev) => !prev)
-            }}
-          >
-            {showNewCourseForm ? '✕ Cancel' : '+ New Course'}
-          </button>
+          {isAdmin && (
+            <button
+              type="button"
+              className="new-thread-button courses-new-button"
+              onClick={() => {
+                if (!user || !token) { openAuth('login'); return }
+                setShowNewCourseForm((prev) => !prev)
+              }}
+            >
+              {showNewCourseForm ? '✕ Cancel' : '+ New Course'}
+            </button>
+          )}
         </div>
 
         {showNewCourseForm && <CourseForm token={token} onCreated={handleCourseCreated} />}
 
+        {editingCourseId && isAdmin && (
+          <form className="resource-form" onSubmit={handleCourseEditSubmit}>
+            <div className="resource-form-header">
+              <div>
+                <p className="resource-form-eyebrow">Edit</p>
+                <h3>Update course</h3>
+              </div>
+              <small>Course: {editingCourseId}</small>
+            </div>
+            <input
+              type="text"
+              value={courseEditForm.title}
+              onChange={(event) => setCourseEditForm((prev) => ({ ...prev, title: event.target.value }))}
+              placeholder="Course title"
+            />
+            <textarea
+              value={courseEditForm.description}
+              onChange={(event) => setCourseEditForm((prev) => ({ ...prev, description: event.target.value }))}
+              placeholder="Course description"
+              rows={4}
+            />
+            {courseActionError && <p className="panel-message panel-error">{courseActionError}</p>}
+            <div className="reply-submit-row">
+              <button type="button" className="ghost-button" onClick={() => setEditingCourseId('')}>Cancel</button>
+              <button type="submit" className="reply-submit-button" disabled={courseActionLoading}>
+                {courseActionLoading ? 'Saving...' : 'Save course'}
+              </button>
+            </div>
+          </form>
+        )}
+
         <div className="course-grid">
           {coursesLoading && <p className="panel-message">Loading courses...</p>}
           {coursesError && <p className="panel-message panel-error">{coursesError}</p>}
+          {courseActionError && !editingCourseId && <p className="panel-message panel-error">{courseActionError}</p>}
 
           {filteredCourses.map((course) => (
             <CourseCard
@@ -112,6 +219,24 @@ export default function CoursesPage({ user, token, courses, setCourses, selected
               onOpenDiscussion={() => {
                 setSelectedCourse(course.id)
                 navigate('/discussions')
+              }}
+              onOpenResources={() => {
+                setSelectedCourse(course.id)
+                navigate('/resources')
+              }}
+              canManage={isAdmin}
+              onEdit={() => {
+                setEditingCourseId(course.id)
+                setCourseEditForm({
+                  title: course.title || '',
+                  description: course.description || '',
+                })
+                setCourseActionError('')
+              }}
+              onDelete={() => {
+                if (window.confirm(`Delete course ${course.id}?`)) {
+                  handleCourseDelete(course.id)
+                }
               }}
             />
           ))}

@@ -18,6 +18,14 @@ export default function ThreadsPage({ user, token, courses, selectedCourse, setS
   const [replyError, setReplyError] = useState('')
   const [replyLoading, setReplyLoading] = useState(false)
   const [showNewThreadForm, setShowNewThreadForm] = useState(false)
+  const [threadEditMode, setThreadEditMode] = useState(false)
+  const [threadEditForm, setThreadEditForm] = useState({ title: '', body: '', tags: '' })
+  const [threadActionError, setThreadActionError] = useState('')
+  const [threadActionLoading, setThreadActionLoading] = useState(false)
+  const [editingReplyId, setEditingReplyId] = useState('')
+  const [replyEditBody, setReplyEditBody] = useState('')
+  const [replyEditLoading, setReplyEditLoading] = useState(false)
+  const [replyEditError, setReplyEditError] = useState('')
 
   const activeCourse = courses.find((c) => c.id === selectedCourse) || courses[0] || null
   const activeThread = threads.find((t) => t.id === activeThreadId) || null
@@ -32,6 +40,13 @@ export default function ThreadsPage({ user, token, courses, selectedCourse, setS
     setReplyText('')
     setReplyError('')
     setReplyLoading(false)
+    setThreadEditMode(false)
+    setThreadActionError('')
+    setThreadActionLoading(false)
+    setEditingReplyId('')
+    setReplyEditBody('')
+    setReplyEditError('')
+    setReplyEditLoading(false)
   }, [activeThreadId])
 
   // Socket.io live updates
@@ -57,19 +72,47 @@ export default function ThreadsPage({ user, token, courses, selectedCourse, setS
         addNotificationRef.current?.('New reply added')
       }
     }
+    const handleReplyUpdated = ({ thread }) => {
+      if (thread) {
+        setThreads((prev) => prev.map((t) => (t.id === thread.id ? thread : t)))
+      }
+    }
+    const handleReplyDeleted = ({ threadId, replyId }) => {
+      setThreads((prev) => prev.map((t) => {
+        if (t.id !== threadId) return t
+        return {
+          ...t,
+          replies: Array.isArray(t.replies) ? t.replies.filter((reply) => reply.id !== replyId) : [],
+        }
+      }))
+    }
 
     socket.on('thread:created', handleThreadCreated)
     socket.on('thread:updated', handleThreadUpdated)
     socket.on('thread:deleted', handleThreadDeleted)
     socket.on('reply:added', handleReplyAdded)
+    socket.on('reply:updated', handleReplyUpdated)
+    socket.on('reply:deleted', handleReplyDeleted)
 
     return () => {
       socket.off('thread:created', handleThreadCreated)
       socket.off('thread:updated', handleThreadUpdated)
       socket.off('thread:deleted', handleThreadDeleted)
       socket.off('reply:added', handleReplyAdded)
+      socket.off('reply:updated', handleReplyUpdated)
+      socket.off('reply:deleted', handleReplyDeleted)
     }
   }, [socket, selectedCourse, activeThreadId])
+
+  const canManageThread = useMemo(() => {
+    if (!user || !activeThread) return false
+    return user.role === 'admin' || String(user.id) === String(activeThread.authorId)
+  }, [user, activeThread])
+
+  function canManageReply(reply) {
+    if (!user || !reply) return false
+    return user.role === 'admin' || String(user.id) === String(reply.authorId)
+  }
 
   async function loadThreads(courseId, query = '') {
     const trimmedQuery = query.trim()
@@ -157,6 +200,180 @@ export default function ThreadsPage({ user, token, courses, selectedCourse, setS
       setReplyError(error.message || 'Unexpected network error')
     } finally {
       setReplyLoading(false)
+    }
+  }
+
+  async function handleThreadUpdate(event) {
+    event.preventDefault()
+    if (!selectedCourse || !activeThread || !token || !canManageThread) return
+
+    const sanitizedTitle = DOMPurify.sanitize(threadEditForm.title.trim())
+    const sanitizedBody = DOMPurify.sanitize(threadEditForm.body.trim())
+    const tags = threadEditForm.tags
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter(Boolean)
+
+    if (!sanitizedTitle || !sanitizedBody) {
+      setThreadActionError('Title and body are required')
+      return
+    }
+
+    setThreadActionLoading(true)
+    setThreadActionError('')
+
+    try {
+      const response = await fetch(
+        `/api/courses/${encodeURIComponent(selectedCourse)}/threads/${encodeURIComponent(activeThread.id)}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ title: sanitizedTitle, body: sanitizedBody, tags }),
+        }
+      )
+      const data = await response.json()
+
+      if (!response.ok) {
+        setThreadActionError(data.error || 'Failed to update thread')
+        return
+      }
+
+      if (data.thread) {
+        setThreads((prev) => prev.map((thread) => (thread.id === data.thread.id ? data.thread : thread)))
+      }
+      setThreadEditMode(false)
+    } catch (error) {
+      setThreadActionError(error.message || 'Unexpected network error')
+    } finally {
+      setThreadActionLoading(false)
+    }
+  }
+
+  async function handleThreadDelete() {
+    if (!selectedCourse || !activeThread || !token || !canManageThread) return
+
+    setThreadActionLoading(true)
+    setThreadActionError('')
+
+    try {
+      const response = await fetch(
+        `/api/courses/${encodeURIComponent(selectedCourse)}/threads/${encodeURIComponent(activeThread.id)}`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      )
+      const data = await response.json()
+
+      if (!response.ok) {
+        setThreadActionError(data.error || 'Failed to delete thread')
+        return
+      }
+
+      await loadThreads(selectedCourse, threadSearch)
+    } catch (error) {
+      setThreadActionError(error.message || 'Unexpected network error')
+    } finally {
+      setThreadActionLoading(false)
+    }
+  }
+
+  function beginThreadEdit() {
+    if (!activeThread) return
+    setThreadEditForm({
+      title: activeThread.title || '',
+      body: activeThread.body || '',
+      tags: Array.isArray(activeThread.tags) ? activeThread.tags.join(', ') : '',
+    })
+    setThreadEditMode(true)
+    setThreadActionError('')
+  }
+
+  function beginReplyEdit(reply) {
+    setEditingReplyId(reply.id)
+    setReplyEditBody(reply.body || '')
+    setReplyEditError('')
+  }
+
+  async function handleReplyUpdate(replyId) {
+    if (!selectedCourse || !activeThread || !token) return
+    const sanitizedBody = DOMPurify.sanitize(replyEditBody.trim())
+    if (!sanitizedBody) {
+      setReplyEditError('Reply cannot be empty')
+      return
+    }
+
+    setReplyEditLoading(true)
+    setReplyEditError('')
+    try {
+      const response = await fetch(
+        `/api/courses/${encodeURIComponent(selectedCourse)}/threads/${encodeURIComponent(activeThread.id)}/replies/${encodeURIComponent(replyId)}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ body: sanitizedBody }),
+        }
+      )
+      const data = await response.json()
+
+      if (!response.ok) {
+        setReplyEditError(data.error || 'Failed to update reply')
+        return
+      }
+
+      if (data.thread) {
+        setThreads((prev) => prev.map((thread) => (thread.id === data.thread.id ? data.thread : thread)))
+      }
+      setEditingReplyId('')
+      setReplyEditBody('')
+    } catch (error) {
+      setReplyEditError(error.message || 'Unexpected network error')
+    } finally {
+      setReplyEditLoading(false)
+    }
+  }
+
+  async function handleReplyDelete(replyId) {
+    if (!selectedCourse || !activeThread || !token) return
+
+    setReplyEditLoading(true)
+    setReplyEditError('')
+    try {
+      const response = await fetch(
+        `/api/courses/${encodeURIComponent(selectedCourse)}/threads/${encodeURIComponent(activeThread.id)}/replies/${encodeURIComponent(replyId)}`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      )
+      const data = await response.json()
+
+      if (!response.ok) {
+        setReplyEditError(data.error || 'Failed to delete reply')
+        return
+      }
+
+      setThreads((prev) => prev.map((thread) => {
+        if (thread.id !== activeThread.id) return thread
+        return {
+          ...thread,
+          replies: Array.isArray(thread.replies) ? thread.replies.filter((reply) => reply.id !== replyId) : [],
+        }
+      }))
+      if (editingReplyId === replyId) {
+        setEditingReplyId('')
+        setReplyEditBody('')
+      }
+    } catch (error) {
+      setReplyEditError(error.message || 'Unexpected network error')
+    } finally {
+      setReplyEditLoading(false)
     }
   }
 
@@ -258,9 +475,61 @@ export default function ThreadsPage({ user, token, courses, selectedCourse, setS
 
               <div className="thread-conversation">
                 <article className="thread-message thread-message-original">
-                  <div className="thread-message-bubble">
-                    <p>{DOMPurify.sanitize(activeThread?.body || '')}</p>
-                  </div>
+                  {threadEditMode ? (
+                    <form className="resource-form" onSubmit={handleThreadUpdate}>
+                      <input
+                        type="text"
+                        value={threadEditForm.title}
+                        onChange={(event) => setThreadEditForm((prev) => ({ ...prev, title: event.target.value }))}
+                        placeholder="Thread title"
+                        required
+                      />
+                      <textarea
+                        value={threadEditForm.body}
+                        onChange={(event) => setThreadEditForm((prev) => ({ ...prev, body: event.target.value }))}
+                        placeholder="Thread body"
+                        rows={6}
+                        required
+                      />
+                      <input
+                        type="text"
+                        value={threadEditForm.tags}
+                        onChange={(event) => setThreadEditForm((prev) => ({ ...prev, tags: event.target.value }))}
+                        placeholder="Tags separated by commas"
+                      />
+                      {threadActionError && <p className="panel-message panel-error">{threadActionError}</p>}
+                      <div className="reply-submit-row">
+                        <button type="button" className="ghost-button" onClick={() => setThreadEditMode(false)}>Cancel</button>
+                        <button type="submit" className="reply-submit-button" disabled={threadActionLoading}>
+                          {threadActionLoading ? 'Saving...' : 'Save thread'}
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <>
+                      <div className="thread-message-bubble">
+                        <p>{DOMPurify.sanitize(activeThread?.body || '')}</p>
+                      </div>
+                      {canManageThread && (
+                        <div className="resource-actions">
+                          <button type="button" className="resource-action-button" onClick={beginThreadEdit}>Edit thread</button>
+                          <button
+                            type="button"
+                            className="resource-action-button"
+                            onClick={() => {
+                              if (window.confirm('Delete this thread?')) {
+                                handleThreadDelete()
+                              }
+                            }}
+                            disabled={threadActionLoading}
+                          >
+                            {threadActionLoading ? 'Deleting...' : 'Delete thread'}
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {!threadEditMode && threadActionError && <p className="panel-message panel-error">{threadActionError}</p>}
                   {Array.isArray(activeThread?.tags) && activeThread.tags.length > 0 && (
                     <div className="thread-tags">
                       {activeThread.tags.map((tag) => (
@@ -288,9 +557,57 @@ export default function ThreadsPage({ user, token, courses, selectedCourse, setS
                           <strong>{reply.authorName || 'Anonymous'}</strong>
                           <span>{formatThreadDate(reply.createdAt)}</span>
                         </div>
-                        <div className="thread-message-bubble thread-message-bubble-reply">
-                          <p>{DOMPurify.sanitize(reply.body || '')}</p>
-                        </div>
+                        {editingReplyId === reply.id ? (
+                          <div className="resource-form">
+                            <textarea
+                              value={replyEditBody}
+                              onChange={(event) => setReplyEditBody(event.target.value)}
+                              rows={4}
+                              placeholder="Edit reply"
+                            />
+                            {replyEditError && <p className="panel-message panel-error">{replyEditError}</p>}
+                            <div className="reply-submit-row">
+                              <button type="button" className="ghost-button" onClick={() => setEditingReplyId('')}>Cancel</button>
+                              <button
+                                type="button"
+                                className="reply-submit-button"
+                                onClick={() => handleReplyUpdate(reply.id)}
+                                disabled={replyEditLoading}
+                              >
+                                {replyEditLoading ? 'Saving...' : 'Save reply'}
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="thread-message-bubble thread-message-bubble-reply">
+                              <p>{DOMPurify.sanitize(reply.body || '')}</p>
+                            </div>
+                            {canManageReply(reply) && (
+                              <div className="resource-actions">
+                                <button
+                                  type="button"
+                                  className="resource-action-button"
+                                  onClick={() => beginReplyEdit(reply)}
+                                >
+                                  Edit reply
+                                </button>
+                                <button
+                                  type="button"
+                                  className="resource-action-button"
+                                  onClick={() => {
+                                    if (window.confirm('Delete this reply?')) {
+                                      handleReplyDelete(reply.id)
+                                    }
+                                  }}
+                                  disabled={replyEditLoading}
+                                >
+                                  {replyEditLoading ? 'Deleting...' : 'Delete reply'}
+                                </button>
+                              </div>
+                            )}
+                          </>
+                        )}
                       </div>
                     </article>
                   ))}

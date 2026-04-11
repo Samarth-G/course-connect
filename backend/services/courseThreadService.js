@@ -2,9 +2,12 @@ import {
   addReplyToThreadByCourseAndId,
   aggregateCourses,
   createThread,
+  deleteReplyByCourseThreadAndId,
   deleteThreadByCourseAndId,
+  findReplyByCourseThreadAndId,
   findThreadByCourseAndId,
   searchThreadsByCourse,
+  updateReplyByCourseThreadAndId,
   updateThreadByCourseAndId,
 } from "../repositories/courseThreadRepository.js";
 
@@ -17,6 +20,26 @@ export async function addReplyToCourseThreadById(courseId, threadId, replyData) 
   const updated = await addReplyToThreadByCourseAndId(courseId, threadId, replyData);
 
   return updated ? updated.toJSON() : null;
+}
+
+export async function listCourseThreadRepliesById(courseId, threadId) {
+  const thread = await findThreadByCourseAndId(courseId, threadId);
+  return thread ? thread.toJSON().replies ?? [] : null;
+}
+
+export async function getCourseThreadReplyById(courseId, threadId, replyId) {
+  const reply = await findReplyByCourseThreadAndId(courseId, threadId, replyId);
+  return reply ? reply.toJSON() : null;
+}
+
+export async function updateCourseThreadReplyById(courseId, threadId, replyId, updateData) {
+  const updated = await updateReplyByCourseThreadAndId(courseId, threadId, replyId, updateData);
+  return updated ? updated.toJSON() : null;
+}
+
+export async function deleteCourseThreadReplyById(courseId, threadId, replyId) {
+  const deleted = await deleteReplyByCourseThreadAndId(courseId, threadId, replyId);
+  return Boolean(deleted);
 }
 
 function toCourseLabel(courseId) {

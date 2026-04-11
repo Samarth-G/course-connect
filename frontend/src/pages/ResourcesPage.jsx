@@ -12,6 +12,10 @@ export default function ResourcesPage({ user, token, courses, selectedCourse, se
   const [resourceForm, setResourceForm] = useState({ title: '', type: '', summary: '', resourceFile: null })
   const [resourceSubmitError, setResourceSubmitError] = useState('')
   const [resourceSubmitLoading, setResourceSubmitLoading] = useState(false)
+  const [editingResourceId, setEditingResourceId] = useState('')
+  const [resourceEditForm, setResourceEditForm] = useState({ title: '', type: '', summary: '', resourceFile: null })
+  const [resourceEditError, setResourceEditError] = useState('')
+  const [resourceEditLoading, setResourceEditLoading] = useState(false)
 
   const activeCourse = courses.find((c) => c.id === selectedCourse) || courses[0] || null
 
@@ -30,6 +34,8 @@ export default function ResourcesPage({ user, token, courses, selectedCourse, se
     setResourceSearch('')
     setShowNewResourceForm(false)
     setResourceSubmitError('')
+    setEditingResourceId('')
+    setResourceEditError('')
     setResourceForm({ title: '', type: '', summary: '', resourceFile: null })
   }, [selectedCourse])
 
@@ -135,8 +141,118 @@ export default function ResourcesPage({ user, token, courses, selectedCourse, se
   const resourceSidebarItems = useMemo(() => visibleResources.map((r) => ({ id: r.id, label: r.title })), [visibleResources])
 
   const activeResource = visibleResources.find((r) => r.id === activeResourceId) || visibleResources[0] || null
+  const canManageActiveResource = Boolean(
+    activeResource && user && (user.role === 'admin' || String(user.id) === String(activeResource.uploaderId))
+  )
   const activeResourceFileName = activeResource?.fileName || (activeResource?.filePath ? activeResource.filePath.split('/').pop() : '')
   const activeResourceFileUrl = activeResource?.filePath ? `/uploads/${activeResource.filePath}` : ''
+
+  function beginResourceEdit(resource) {
+    setEditingResourceId(resource.id)
+    setResourceEditForm({
+      title: resource.title || '',
+      type: resource.type || '',
+      summary: resource.summary || '',
+      resourceFile: null,
+    })
+    setResourceEditError('')
+  }
+
+  const handleResourceEditInputChange = (event) => {
+    const { name, value, files } = event.target
+    if (name === 'resourceFile') {
+      setResourceEditForm((prev) => ({ ...prev, resourceFile: files?.[0] || null }))
+      return
+    }
+    setResourceEditForm((prev) => ({ ...prev, [name]: value }))
+  }
+
+  async function handleResourceUpdate(event) {
+    event.preventDefault()
+    if (!activeResource || !token || !canManageActiveResource) return
+
+    const trimmedTitle = resourceEditForm.title.trim()
+    const trimmedType = resourceEditForm.type.trim()
+    const trimmedSummary = resourceEditForm.summary.trim()
+
+    if (!trimmedTitle || !trimmedType || !trimmedSummary) {
+      setResourceEditError('Title, type, and summary are required')
+      return
+    }
+
+    setResourceEditLoading(true)
+    setResourceEditError('')
+
+    try {
+      const formData = new FormData()
+      formData.append('title', DOMPurify.sanitize(trimmedTitle))
+      formData.append('type', DOMPurify.sanitize(trimmedType))
+      formData.append('summary', DOMPurify.sanitize(trimmedSummary))
+      if (resourceEditForm.resourceFile) {
+        formData.append('resourceFile', resourceEditForm.resourceFile)
+      }
+
+      const response = await fetch(
+        `/api/courses/${encodeURIComponent(selectedCourse)}/resources/${encodeURIComponent(activeResource.id)}`,
+        {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        }
+      )
+      const data = await response.json()
+
+      if (!response.ok) {
+        setResourceEditError(data.error || 'Failed to update resource')
+        return
+      }
+
+      const updatedResource = data.resource || null
+      if (updatedResource) {
+        setResources((prev) => prev.map((resource) => (resource.id === updatedResource.id ? updatedResource : resource)))
+        setActiveResourceId(updatedResource.id)
+      } else {
+        await loadResources(selectedCourse)
+      }
+      setEditingResourceId('')
+    } catch (error) {
+      setResourceEditError(error.message || 'Unexpected network error')
+    } finally {
+      setResourceEditLoading(false)
+    }
+  }
+
+  async function handleResourceDelete() {
+    if (!activeResource || !token || !canManageActiveResource) return
+
+    setResourceEditLoading(true)
+    setResourceEditError('')
+
+    try {
+      const response = await fetch(
+        `/api/courses/${encodeURIComponent(selectedCourse)}/resources/${encodeURIComponent(activeResource.id)}`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      )
+      const data = await response.json()
+
+      if (!response.ok) {
+        setResourceEditError(data.error || 'Failed to delete resource')
+        return
+      }
+
+      const remaining = resources.filter((resource) => resource.id !== activeResource.id)
+      setResources(remaining)
+      setEditingResourceId('')
+      setActiveResourceId(remaining[0]?.id || '')
+    } catch (error) {
+      setResourceEditError(error.message || 'Unexpected network error')
+    } finally {
+      setResourceEditLoading(false)
+    }
+  }
 
   return (
     <section className="threads-page">
@@ -223,6 +339,48 @@ export default function ResourcesPage({ user, token, courses, selectedCourse, se
               <div className="resource-summary">
                 <p>{DOMPurify.sanitize(activeResource.summary || '')}</p>
               </div>
+              {canManageActiveResource && editingResourceId === activeResource.id && (
+                <form className="resource-form" onSubmit={handleResourceUpdate}>
+                  <div className="resource-form-grid">
+                    <input
+                      type="text"
+                      name="title"
+                      value={resourceEditForm.title}
+                      onChange={handleResourceEditInputChange}
+                      placeholder="Resource title"
+                      required
+                    />
+                    <input
+                      type="text"
+                      name="type"
+                      value={resourceEditForm.type}
+                      onChange={handleResourceEditInputChange}
+                      placeholder="Type"
+                      required
+                    />
+                  </div>
+                  <textarea
+                    name="summary"
+                    value={resourceEditForm.summary}
+                    onChange={handleResourceEditInputChange}
+                    placeholder="Summary"
+                    rows={4}
+                    required
+                  />
+                  <input
+                    type="file"
+                    name="resourceFile"
+                    onChange={handleResourceEditInputChange}
+                  />
+                  {resourceEditError && <p className="panel-message panel-error">{resourceEditError}</p>}
+                  <div className="reply-submit-row">
+                    <button type="button" className="ghost-button" onClick={() => setEditingResourceId('')}>Cancel</button>
+                    <button type="submit" className="reply-submit-button" disabled={resourceEditLoading}>
+                      {resourceEditLoading ? 'Saving...' : 'Save resource'}
+                    </button>
+                  </div>
+                </form>
+              )}
               <div className="resource-actions">
                 {activeResourceFileUrl ? (
                   <>
@@ -232,7 +390,33 @@ export default function ResourcesPage({ user, token, courses, selectedCourse, se
                 ) : (
                   <button type="button" className="resource-action-button" disabled>No file attached</button>
                 )}
+                {canManageActiveResource && editingResourceId !== activeResource.id && (
+                  <>
+                    <button
+                      type="button"
+                      className="resource-action-button"
+                      onClick={() => beginResourceEdit(activeResource)}
+                    >
+                      Edit resource
+                    </button>
+                    <button
+                      type="button"
+                      className="resource-action-button"
+                      onClick={() => {
+                        if (window.confirm('Delete this resource?')) {
+                          handleResourceDelete()
+                        }
+                      }}
+                      disabled={resourceEditLoading}
+                    >
+                      {resourceEditLoading ? 'Deleting...' : 'Delete resource'}
+                    </button>
+                  </>
+                )}
               </div>
+              {resourceEditError && editingResourceId !== activeResource.id && (
+                <p className="panel-message panel-error">{resourceEditError}</p>
+              )}
             </article>
           </>
         )}
