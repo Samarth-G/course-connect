@@ -37,10 +37,10 @@ app.use("/api/auth", rateLimit({
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api", routers);
 
-app.use((err, _req, res, _next) => {
+app.use((err, req, res, _next) => {
 	if (err?.code === "LIMIT_FILE_SIZE") {
 		const field = String(err.field || "");
-		const isProfileImageUpload = field === "profileImage" || _req.originalUrl?.startsWith("/api/auth/");
+		const isProfileImageUpload = field === "profileImage" || req.originalUrl?.startsWith("/api/auth/");
 		const maxAllowedSize = isProfileImageUpload ? "5MB" : "25MB";
 
 		return res.status(413).json({
