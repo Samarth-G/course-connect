@@ -1,6 +1,7 @@
 import multer from "multer";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { RESOURCE_MAX_BYTES } from "../config/uploadLimits.js";
 
 const uploadsDir = fileURLToPath(new URL("../uploads", import.meta.url));
 
@@ -42,5 +43,5 @@ function fileFilter(_req, file, cb) {
 export const resourceUpload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 25 * 1024 * 1024 },
+  limits: { fileSize: RESOURCE_MAX_BYTES }, // 25 MB
 });
