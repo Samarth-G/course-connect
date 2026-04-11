@@ -22,9 +22,9 @@ export function SocketProvider({ token, children }) {
     })
 
     socketRef.current = nextSocket
+    setSocket(nextSocket)
 
     const handleConnect = () => {
-      setSocket(nextSocket)
       console.log('[socket] connected', nextSocket.id)
     }
 
