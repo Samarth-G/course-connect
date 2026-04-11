@@ -10,6 +10,8 @@ import { findThreadsByCourseAndTitlePairs, insertManyThreads } from "../reposito
 
 const DEMO_USER_EMAIL = "demo@course-connect.local";
 const DEMO_USER_PASSWORD = "Password123!";
+const ADMIN_USER_EMAIL = "admin@courseconnect.local";
+const ADMIN_USER_PASSWORD = "Admin123!";
 const COURSES_FILE_URL = new URL("../data/courses.json", import.meta.url);
 const THREADS_FILE_URL = new URL("../data/threads.json", import.meta.url);
 const RESOURCES_FILE_URL = new URL("../data/resources.json", import.meta.url);
@@ -40,6 +42,17 @@ export async function seedDatabase() {
       email: DEMO_USER_EMAIL,
       passwordHash: await bcrypt.hash(DEMO_USER_PASSWORD, 10),
     });
+  }
+
+  let adminUser = await findUserByEmail(ADMIN_USER_EMAIL);
+  if (!adminUser) {
+    adminUser = await createUser({
+      name: "Admin",
+      email: ADMIN_USER_EMAIL,
+      passwordHash: await bcrypt.hash(ADMIN_USER_PASSWORD, 10),
+      role: "admin",
+    });
+    console.log("Seeded admin user (admin@courseconnect.local / Admin123!)");
   }
 
   const seedCourses = await loadSeedCourses();

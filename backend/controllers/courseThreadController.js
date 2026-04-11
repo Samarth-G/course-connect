@@ -262,7 +262,7 @@ export async function updateCourseThread(req, res) {
       });
     }
 
-    if (existingThread.authorId !== String(req.user?.id ?? "")) {
+    if (existingThread.authorId !== String(req.user?.id ?? "") && req.user?.role !== "admin") {
       return res.status(403).json({
         error: "You can only edit your own threads",
       });
@@ -306,7 +306,7 @@ export async function deleteCourseThread(req, res) {
       });
     }
 
-    if (existingThread.authorId !== String(req.user?.id ?? "")) {
+    if (existingThread.authorId !== String(req.user?.id ?? "") && req.user?.role !== "admin") {
       return res.status(403).json({
         error: "You can only delete your own threads",
       });
