@@ -13,6 +13,7 @@ export default function CoursesPage({ user, token, courses, setCourses, selected
   const [showNewCourseForm, setShowNewCourseForm] = useState(false)
   const [editingCourseId, setEditingCourseId] = useState('')
   const [courseEditForm, setCourseEditForm] = useState({ title: '', description: '' })
+  const [originalCourseEdit, setOriginalCourseEdit] = useState({ title: '', description: '' })
   const [courseActionError, setCourseActionError] = useState('')
   const [courseActionLoading, setCourseActionLoading] = useState(false)
 
@@ -102,11 +103,18 @@ export default function CoursesPage({ user, token, courses, setCourses, selected
     if (!token || !isAdmin || !editingCourseId) return
 
     const payload = {}
-    if (courseEditForm.title.trim()) payload.title = DOMPurify.sanitize(courseEditForm.title.trim())
-    payload.description = DOMPurify.sanitize(courseEditForm.description.trim())
+    const trimmedTitle = courseEditForm.title.trim()
+    const trimmedDescription = courseEditForm.description.trim()
 
-    if (!payload.title && payload.description === '') {
-      setCourseActionError('Provide at least a title or description to update')
+    if (trimmedTitle && trimmedTitle !== originalCourseEdit.title) {
+      payload.title = DOMPurify.sanitize(trimmedTitle)
+    }
+    if (trimmedDescription !== originalCourseEdit.description) {
+      payload.description = DOMPurify.sanitize(trimmedDescription)
+    }
+
+    if (Object.keys(payload).length === 0) {
+      setCourseActionError('No changes detected')
       return
     }
 
@@ -228,6 +236,10 @@ export default function CoursesPage({ user, token, courses, setCourses, selected
               onEdit={() => {
                 setEditingCourseId(course.id)
                 setCourseEditForm({
+                  title: course.title || '',
+                  description: course.description || '',
+                })
+                setOriginalCourseEdit({
                   title: course.title || '',
                   description: course.description || '',
                 })
