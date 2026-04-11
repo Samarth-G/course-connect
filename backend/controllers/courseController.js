@@ -134,3 +134,23 @@ export async function deleteCourseHandler(req, res) {
     return res.status(500).json({ error: "Failed to delete course" });
   }
 }
+
+export async function getCourse(req, res) {
+  const { courseId } = req.params;
+
+  try {
+    const course = await getCourseById(courseId);
+
+    if (!course) {
+      return res.status(404).json({
+        error: "Course not found",
+      });
+    }
+
+    return res.status(200).json({ course });
+  } catch (error) {
+    return res.status(500).json({
+      error: "Failed to get course",
+    });
+  }
+}
