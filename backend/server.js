@@ -23,7 +23,7 @@ async function startServer() {
     const httpServer = createServer(app);
     const io = new SocketIOServer(httpServer, {
       cors: {
-        origin: "http://localhost:5173",
+        origin: process.env.FRONTEND_ORIGIN || "http://localhost:5173",
         methods: ["GET", "POST"],
       },
     });
