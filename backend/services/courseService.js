@@ -1,8 +1,8 @@
-import Course from "../models/courseModel.js";
-
-function escapeRegex(value) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
+import {
+  createCourse,
+  findCourseByCourseId,
+  findCoursesBySearch,
+} from "../repositories/courseRepository.js";
 
 function mapCourse(course) {
   const normalizedCourseId = String(course.courseId || "").trim();
@@ -19,32 +19,17 @@ function mapCourse(course) {
 }
 
 export async function saveCourse(courseData) {
-  const createdCourse = await Course.create(courseData);
+  const createdCourse = await createCourse(courseData);
   return mapCourse(createdCourse.toJSON());
 }
 
 export async function getCourseById(courseId) {
-  const course = await Course.findOne({
-    courseId: { $regex: `^${escapeRegex(String(courseId).trim())}$`, $options: "i" },
-  });
+  const course = await findCourseByCourseId(courseId);
 
   return course ? mapCourse(course.toJSON()) : null;
 }
 
 export async function listCoursesFromDb(searchTerm = "") {
-  const normalizedSearchTerm = String(searchTerm).trim();
-  const query = {};
-
-  if (normalizedSearchTerm) {
-    const escapedSearchTerm = escapeRegex(normalizedSearchTerm);
-
-    query.$or = [
-      { courseId: { $regex: escapedSearchTerm, $options: "i" } },
-      { title: { $regex: escapedSearchTerm, $options: "i" } },
-      { description: { $regex: escapedSearchTerm, $options: "i" } },
-    ];
-  }
-
-  const courses = await Course.find(query).sort({ createdAt: -1 });
+  const courses = await findCoursesBySearch(searchTerm);
   return courses.map((course) => mapCourse(course.toJSON()));
 }

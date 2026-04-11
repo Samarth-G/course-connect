@@ -1,77 +1,51 @@
-import Resource from "../models/resourceModel.js";
+import {
+  createResource,
+  findResourceById,
+  findResourcesByCourseId,
+  searchResourcesByCourseId as searchResourcesByCourseIdInRepository,
+  updateResourceById as updateResourceByIdInRepository,
+  deleteResourceById as deleteResourceByIdInRepository,
+} from "../repositories/resourceRepository.js";
 
 export async function saveResource(resourceData) {
-  const createdResource = await Resource.create(resourceData);
+  const createdResource = await createResource(resourceData);
   return createdResource.toJSON();
 }
 
-function escapeRegex(value) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 export async function getResourcesByCourseId(courseId) {
-  const normalizedCourseId = String(courseId).trim().toLowerCase();
-
-  const resources = await Resource.find({
-    courseId: { $regex: `^${escapeRegex(normalizedCourseId)}$`, $options: "i" },
-  }).sort({ createdAt: -1 });
+  const resources = await findResourcesByCourseId(courseId);
 
   return resources.map((resource) => resource.toJSON());
 }
 
 export async function searchResourcesByCourseId(courseId, searchTerm = "", options = {}) {
-  const { page = 1, limit = 20 } = options;
-
-  const normalizedCourseId = String(courseId).trim().toLowerCase();
-  const normalizedSearchTerm = String(searchTerm).trim().toLowerCase();
-  const skip = (page - 1) * limit;
-
-  const query = {
-    courseId: { $regex: `^${escapeRegex(normalizedCourseId)}$`, $options: "i" },
-  };
-
-  if (normalizedSearchTerm) {
-    const safeSearch = escapeRegex(normalizedSearchTerm);
-    query.$or = [
-      { title: { $regex: safeSearch, $options: "i" } },
-      { summary: { $regex: safeSearch, $options: "i" } },
-      { type: { $regex: safeSearch, $options: "i" } },
-    ];
-  }
-
-  const [results, total] = await Promise.all([
-    Resource.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit),
-    Resource.countDocuments(query),
-  ]);
+  const { results, total, page, limit, totalPages } = await searchResourcesByCourseIdInRepository(
+    courseId,
+    searchTerm,
+    options,
+  );
 
   return {
     results: results.map((resource) => resource.toJSON()),
     total,
     page,
     limit,
-    totalPages: Math.max(1, Math.ceil(total / limit)),
+    totalPages,
   };
 }
 
 export async function getResourceById(resourceId) {
-  const resource = await Resource.findById(resourceId);
+  const resource = await findResourceById(resourceId);
   return resource ? resource.toJSON() : null;
 }
 
 export async function updateResourceById(resourceId, updateData) {
-  const updated = await Resource.findByIdAndUpdate(
-    resourceId,
-    updateData,
-    { returnDocument: "after", runValidators: true }
-  );
+  const updated = await updateResourceByIdInRepository(resourceId, updateData);
 
   return updated ? updated.toJSON() : null;
 }
 
 export async function deleteResourceById(resourceId) {
-  const deleted = await Resource.findByIdAndDelete(resourceId);
+  const deleted = await deleteResourceByIdInRepository(resourceId);
   return Boolean(deleted);
 }
