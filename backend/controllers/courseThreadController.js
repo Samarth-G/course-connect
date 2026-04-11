@@ -365,7 +365,7 @@ export async function addCourseThreadReply(req, res) {
     }
 
     const io = getIO();
-    if (io) io.emit("reply:added", updatedThread);
+    if (io) io.emit("reply:added", { thread: updatedThread });
 
     return res.status(201).json({
       message: "Reply added successfully",

@@ -1,4 +1,9 @@
-function Header({ user, activePage, onNavigate, onShowAuth, onLogout }) {
+import { NavLink, useNavigate } from 'react-router-dom'
+import { useSocket } from '../contexts/SocketContext'
+
+function Header({ user, onShowAuth, onLogout }) {
+  const navigate = useNavigate()
+  const { notifications, clearNotifications } = useSocket() || {}
   const showAuthButtons = !user
 
   const avatarUrl = user?.profileImage
@@ -7,42 +12,37 @@ function Header({ user, activePage, onNavigate, onShowAuth, onLogout }) {
 
   return (
     <header className="topbar">
-      <button type="button" className="logo-mark" onClick={() => onNavigate('courses')} aria-label="CourseConnect Home">
+      <NavLink to="/" className="logo-mark" aria-label="CourseConnect Home">
         C
-      </button>
+      </NavLink>
 
       <nav className="main-nav" aria-label="Primary">
-        <button
-          type="button"
-          className={activePage === 'courses' ? 'nav-chip active' : 'nav-chip'}
-          onClick={() => onNavigate('courses')}
-        >
+        <NavLink to="/" end className={({ isActive }) => isActive ? 'nav-chip active' : 'nav-chip'}>
           Courses
-        </button>
-        <button
-          type="button"
-          className={activePage === 'threads' ? 'nav-chip active' : 'nav-chip'}
-          onClick={() => onNavigate('threads')}
-        >
+        </NavLink>
+        <NavLink to="/discussions" className={({ isActive }) => isActive ? 'nav-chip active' : 'nav-chip'}>
           Discussions
-        </button>
-        <button
-          type="button"
-          className={activePage === 'resources' ? 'nav-chip active' : 'nav-chip'}
-          onClick={() => onNavigate('resources')}
-        >
+        </NavLink>
+        <NavLink to="/resources" className={({ isActive }) => isActive ? 'nav-chip active' : 'nav-chip'}>
           Resources
-        </button>
-        <button
-          type="button"
-          className={activePage === 'sessions' ? 'nav-chip active' : 'nav-chip'}
-          onClick={() => onNavigate('sessions')}
-        >
+        </NavLink>
+        <NavLink to="/sessions" className={({ isActive }) => isActive ? 'nav-chip active' : 'nav-chip'}>
           Study Sessions
-        </button>
+        </NavLink>
+        {user?.role === 'admin' && (
+          <NavLink to="/admin" className={({ isActive }) => isActive ? 'nav-chip active nav-chip-admin' : 'nav-chip nav-chip-admin'}>
+            Admin
+          </NavLink>
+        )}
       </nav>
 
       <div className="topbar-right">
+        {notifications && notifications.length > 0 && (
+          <button type="button" className="notification-badge" onClick={clearNotifications} title="Clear notifications">
+            {notifications.length}
+          </button>
+        )}
+
         {showAuthButtons && (
           <>
             <button type="button" className="auth-chip" onClick={() => onShowAuth?.('login')}>
@@ -56,11 +56,13 @@ function Header({ user, activePage, onNavigate, onShowAuth, onLogout }) {
 
         {user && (
           <>
-            {avatarUrl ? (
-              <img src={avatarUrl} alt={user.name} className="header-avatar-img" />
-            ) : (
-              <span className="avatar-shell">{(user.name || 'U').slice(0, 1).toUpperCase()}</span>
-            )}
+            <button type="button" className="header-profile-btn" onClick={() => navigate('/profile')} title="View profile">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={user.name} className="header-avatar-img" />
+              ) : (
+                <span className="avatar-shell">{(user.name || 'U').slice(0, 1).toUpperCase()}</span>
+              )}
+            </button>
             <span className="user-name">{user.name}</span>
             <button type="button" className="auth-chip" onClick={onLogout}>
               Logout
