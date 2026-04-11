@@ -1,0 +1,27 @@
+services:
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      PORT: ${PORT:-5050}
+      MONGODB_URI: ${MONGODB_URI}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost}
+      NODE_ENV: production
+      # Set to "true" to populate the DB with demo data on first run
+      SEED_DATABASE: ${SEED_DATABASE:-false}
+    volumes:
+      - uploads_data:/app/uploads
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-80}:80"
+    depends_on:
+      - backend
+
+volumes:
+  uploads_data:
