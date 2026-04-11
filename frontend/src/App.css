@@ -895,3 +895,296 @@
     grid-column: auto;
   }
 }
+
+/* --- Logo as link --- */
+a.logo-mark {
+  text-decoration: none;
+  border: none;
+  background: transparent;
+  color: #26262a;
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+/* --- Nav chip as NavLink --- */
+a.nav-chip {
+  text-decoration: none;
+}
+
+.nav-chip-admin {
+  color: #7c3aed;
+  font-weight: 600;
+}
+
+/* --- Notification badge --- */
+.notification-badge {
+  border: none;
+  background: #7c3aed;
+  color: #fff;
+  border-radius: 999px;
+  min-width: 22px;
+  height: 22px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  padding: 0 5px;
+  cursor: pointer;
+}
+
+/* --- Header profile button --- */
+.header-profile-btn {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+/* --- Profile Page --- */
+.profile-page {
+  flex: 1;
+  display: grid;
+  place-items: start center;
+  padding: 32px 20px;
+}
+
+.profile-card {
+  width: min(520px, 100%);
+  background: #f7f7f7;
+  border: 1px solid #d0d0d6;
+  border-radius: 14px;
+  padding: 20px;
+  display: grid;
+  gap: 16px;
+}
+
+.profile-header {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.profile-header h2 {
+  margin: 0;
+}
+
+.profile-avatar-img {
+  width: 64px;
+  height: 64px;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 2px solid #cfbfed;
+}
+
+.profile-avatar-placeholder {
+  width: 64px;
+  height: 64px;
+  border-radius: 999px;
+  background: #ddd3f0;
+  color: #574978;
+  display: grid;
+  place-items: center;
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.profile-email {
+  margin: 2px 0 0;
+  color: #6d6d74;
+  font-size: 0.9rem;
+}
+
+.profile-meta {
+  margin: 4px 0 0;
+  color: #6d6d74;
+  font-size: 0.82rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.profile-badge-admin {
+  background: #7c3aed;
+  color: #fff;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.profile-edit-form {
+  display: grid;
+  gap: 10px;
+}
+
+.profile-edit-form input[type="text"],
+.profile-edit-form input[type="email"] {
+  border: 1px solid #ceced4;
+  border-radius: 8px;
+  padding: 9px;
+  font: inherit;
+}
+
+.profile-edit-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.profile-success {
+  color: #166534;
+}
+
+/* --- Admin Dashboard --- */
+.admin-dashboard {
+  flex: 1;
+  padding: 24px 20px;
+  max-width: 1100px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.admin-dashboard h1 {
+  margin: 0 0 20px;
+  font-size: 1.6rem;
+}
+
+.admin-section {
+  margin-bottom: 28px;
+}
+
+.admin-section h2 {
+  margin: 0 0 12px;
+  font-size: 1.15rem;
+}
+
+.admin-search-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.admin-search-bar input {
+  flex: 1;
+  border: 1px solid #ceced4;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font: inherit;
+}
+
+.admin-course-select {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.admin-course-select select {
+  padding: 7px 8px;
+  border-radius: 8px;
+  border: 1px solid #d0d0d3;
+  background: #f0f0f0;
+  font-size: 0.88rem;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.admin-table th,
+.admin-table td {
+  border: 1px solid #d8d8dc;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.admin-table th {
+  background: #e8e8e8;
+  font-weight: 600;
+}
+
+.admin-table tr:nth-child(even) {
+  background: #f5f5f5;
+}
+
+.admin-status-active {
+  color: #166534;
+  font-weight: 600;
+}
+
+.admin-status-disabled {
+  color: #991b1b;
+  font-weight: 600;
+}
+
+.admin-btn {
+  border: 1px solid #b8b8bf;
+  border-radius: 6px;
+  background: #efefef;
+  color: #2a2a2f;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.admin-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admin-btn-danger {
+  background: #fecaca;
+  border-color: #f87171;
+  color: #991b1b;
+}
+
+.admin-btn-success {
+  background: #bbf7d0;
+  border-color: #4ade80;
+  color: #166534;
+}
+
+.admin-actions-cell {
+  display: flex;
+  gap: 6px;
+}
+
+.admin-edit-form {
+  display: grid;
+  gap: 10px;
+  border: 1px solid #d7d7dc;
+  border-radius: 14px;
+  background: #f7f7f7;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+
+.admin-edit-form h3 {
+  margin: 0;
+}
+
+.admin-edit-form input,
+.admin-edit-form textarea {
+  width: 100%;
+  border: 1px solid #cfcfd4;
+  border-radius: 10px;
+  padding: 11px 12px;
+  background: #fff;
+  color: #222228;
+  font: inherit;
+}
+
+.admin-edit-form textarea {
+  resize: vertical;
+}
