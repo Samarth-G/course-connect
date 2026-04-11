@@ -28,13 +28,29 @@ function getMinutesOfDayInOffset(dateValue, timezoneOffsetMinutes) {
   return normalizeMinutesOfDay(utcMinutes - timezoneOffsetMinutes);
 }
 
+function getLocalDateKeyInOffset(dateValue, timezoneOffsetMinutes) {
+  const localTime = new Date(dateValue.getTime() - timezoneOffsetMinutes * 60 * 1000);
+  return `${localTime.getUTCFullYear()}-${localTime.getUTCMonth()}-${localTime.getUTCDate()}`;
+}
+
 function areSessionTimesWithinCalendarRange(startAt, endAt, timezoneOffsetMinutes) {
   const startMinutes = getMinutesOfDayInOffset(startAt, timezoneOffsetMinutes);
   const endMinutes = getMinutesOfDayInOffset(endAt, timezoneOffsetMinutes);
+  const startLocalDate = getLocalDateKeyInOffset(startAt, timezoneOffsetMinutes);
+  const endLocalDate = getLocalDateKeyInOffset(endAt, timezoneOffsetMinutes);
   const rangeStartMinutes = CALENDAR_START_HOUR * 60;
   const rangeEndMinutes = CALENDAR_END_HOUR * 60;
 
-  return startMinutes >= rangeStartMinutes && endMinutes <= rangeEndMinutes;
+  if (startLocalDate !== endLocalDate) {
+    return false;
+  }
+
+  return (
+    startMinutes >= rangeStartMinutes &&
+    startMinutes <= rangeEndMinutes &&
+    endMinutes >= rangeStartMinutes &&
+    endMinutes <= rangeEndMinutes
+  );
 }
 
 function parseTimezoneOffsetMinutes(value) {
