@@ -15,7 +15,7 @@ describe('ThreadForm', () => {
 
     beforeEach(() => {
       originalFetch = global.fetch
-      global.fetch = jest.fn().mockResolvedValueOnce({
+      global.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: async () => ({ thread: { id: 'thread-1' } }),
       })
@@ -25,7 +25,7 @@ describe('ThreadForm', () => {
       global.fetch = originalFetch
     })
 
-    test('calls fetch with deduplicated tags', async () => {
+    test('calls fetch with tags passed as an array', async () => {
       const onCreated = jest.fn()
 
       render(
