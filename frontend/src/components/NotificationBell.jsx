@@ -33,7 +33,11 @@ export default function NotificationBell() {
       <button
         type="button"
         className="notification-bell-btn"
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={() => {
+          const next = !open
+          if (next && unreadCount > 0) markAllRead()
+          setOpen(next)
+        }}
         title="Notifications"
         aria-label={`Notifications${unreadCount ? ` (${unreadCount} unread)` : ''}`}
       >
@@ -45,11 +49,6 @@ export default function NotificationBell() {
         <div className="notification-dropdown">
           <div className="notification-dropdown-header">
             <h4>Notifications</h4>
-            {unreadCount > 0 && (
-              <button type="button" className="notification-mark-read" onClick={markAllRead}>
-                Mark all read
-              </button>
-            )}
           </div>
 
           {(!notifications || notifications.length === 0) && (
