@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import DOMPurify from 'dompurify'
 import CourseCard from '../components/CourseCard'
 import CourseForm from '../components/CourseForm'
+import ActivityChart from '../components/ActivityChart'
 import { useSocket } from '../contexts/socketContext'
 
 export default function CoursesPage({ user, token, courses, setCourses, setSelectedCourse, openAuth }) {
@@ -296,6 +297,8 @@ export default function CoursesPage({ user, token, courses, setCourses, setSelec
           )}
         </div>
       </section>
+
+      {user && <ActivityChart token={token} />}
     </section>
   )
 }

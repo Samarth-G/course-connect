@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import DOMPurify from 'dompurify'
 import { useSocket } from '../contexts/socketContext'
+import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
 export default function AdminDashboard({ user, token }) {
   const { socket } = useSocket() || {}
@@ -21,6 +22,15 @@ export default function AdminDashboard({ user, token }) {
   const [editError, setEditError] = useState('')
   const [editLoading, setEditLoading] = useState(false)
 
+  // Usage report state
+  const today = new Date().toISOString().slice(0, 10)
+  const thirtyAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10)
+  const [reportStart, setReportStart] = useState(thirtyAgo)
+  const [reportEnd, setReportEnd] = useState(today)
+  const [summary, setSummary] = useState(null)
+  const [activityChart, setActivityChart] = useState([])
+  const [reportLoading, setReportLoading] = useState(false)
+
   // Load courses on mount
   useEffect(() => {
     async function fetchCourses() {
@@ -37,6 +47,43 @@ export default function AdminDashboard({ user, token }) {
     }
     fetchCourses()
   }, [])
+
+  // Load usage reports
+  useEffect(() => {
+    if (!token) return
+    async function fetchReports() {
+      setReportLoading(true)
+      try {
+        const params = new URLSearchParams({ startDate: reportStart, endDate: reportEnd })
+        const [sumRes, actRes] = await Promise.all([
+          fetch(`/api/analytics/summary?${params}`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`/api/analytics/activity?${params}`, { headers: { Authorization: `Bearer ${token}` } }),
+        ])
+        if (sumRes.ok) {
+          const sumData = await sumRes.json()
+          setSummary(sumData)
+        }
+        if (actRes.ok) {
+          const actData = await actRes.json()
+          const dateMap = {}
+          const addToMap = (arr, key) => {
+            (arr || []).forEach(({ _id, count }) => {
+              if (!dateMap[_id]) dateMap[_id] = { date: _id }
+              dateMap[_id][key] = count
+            })
+          }
+          addToMap(actData.threads, 'threads')
+          addToMap(actData.replies, 'replies')
+          addToMap(actData.resources, 'resources')
+          addToMap(actData.users, 'signups')
+          addToMap(actData.sessions, 'sessions')
+          setActivityChart(Object.values(dateMap).sort((a, b) => a.date.localeCompare(b.date)))
+        }
+      } catch { /* ignore */ }
+      finally { setReportLoading(false) }
+    }
+    fetchReports()
+  }, [token, reportStart, reportEnd])
 
   // Load users
   const loadUsers = useCallback(async (searchTerm = '') => {
@@ -350,6 +397,67 @@ export default function AdminDashboard({ user, token }) {
 
         {!threadsLoading && threads.length === 0 && !threadsError && (
           <p className="panel-message">No threads in this course.</p>
+        )}
+      </div>
+
+      {/* Usage Reports */}
+      <div className="admin-section admin-usage-section">
+        <h2>Usage Reports</h2>
+
+        <div className="activity-chart-filters">
+          <label>From</label>
+          <input type="date" value={reportStart} onChange={(e) => setReportStart(e.target.value)} />
+          <label>To</label>
+          <input type="date" value={reportEnd} onChange={(e) => setReportEnd(e.target.value)} />
+        </div>
+
+        {reportLoading && <p className="panel-message">Loading reports...</p>}
+
+        {!reportLoading && summary && (
+          <div className="admin-summary-cards">
+            <div className="admin-summary-card">
+              <div className="summary-number">{summary.users}</div>
+              <div className="summary-label">New Users</div>
+            </div>
+            <div className="admin-summary-card">
+              <div className="summary-number">{summary.threads}</div>
+              <div className="summary-label">Threads</div>
+            </div>
+            <div className="admin-summary-card">
+              <div className="summary-number">{summary.replies}</div>
+              <div className="summary-label">Replies</div>
+            </div>
+            <div className="admin-summary-card">
+              <div className="summary-number">{summary.resources}</div>
+              <div className="summary-label">Resources</div>
+            </div>
+            <div className="admin-summary-card">
+              <div className="summary-number">{summary.sessions}</div>
+              <div className="summary-label">Sessions</div>
+            </div>
+          </div>
+        )}
+
+        {!reportLoading && activityChart.length > 0 && (
+          <div style={{ width: '100%', height: 280 }}>
+            <ResponsiveContainer>
+              <LineChart data={activityChart} margin={{ left: 0, right: 20, top: 5, bottom: 5 }}>
+                <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="signups" stroke="#4f46e5" strokeWidth={2} dot={false} name="Signups" />
+                <Line type="monotone" dataKey="threads" stroke="#10b981" strokeWidth={2} dot={false} name="Threads" />
+                <Line type="monotone" dataKey="replies" stroke="#f59e0b" strokeWidth={2} dot={false} name="Replies" />
+                <Line type="monotone" dataKey="resources" stroke="#ef4444" strokeWidth={2} dot={false} name="Resources" />
+                <Line type="monotone" dataKey="sessions" stroke="#8b5cf6" strokeWidth={2} dot={false} name="Sessions" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+
+        {!reportLoading && activityChart.length === 0 && !summary && (
+          <p className="panel-message">No usage data for this period.</p>
         )}
       </div>
     </section>

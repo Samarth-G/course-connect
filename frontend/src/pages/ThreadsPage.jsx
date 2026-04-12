@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import DOMPurify from 'dompurify'
 import Sidebar from '../components/Sidebar'
 import ThreadForm from '../components/ThreadForm'
+import HotThreads from '../components/HotThreads'
 import { useSocket } from '../contexts/socketContext'
 
 export default function ThreadsPage({ user, token, courses, selectedCourse, setSelectedCourse, openAuth }) {
@@ -24,6 +25,9 @@ export default function ThreadsPage({ user, token, courses, selectedCourse, setS
   const [replyEditBody, setReplyEditBody] = useState('')
   const [replyEditLoading, setReplyEditLoading] = useState(false)
   const [replyEditError, setReplyEditError] = useState('')
+  const [expandedBodies, setExpandedBodies] = useState({})
+  const [showAllReplies, setShowAllReplies] = useState({})
+  const [expandedReplies, setExpandedReplies] = useState({})
 
   const activeCourse = courses.find((c) => c.id === selectedCourse) || courses[0] || null
   const activeThread = threads.find((t) => t.id === activeThreadId) || null
@@ -438,6 +442,8 @@ export default function ThreadsPage({ user, token, courses, selectedCourse, setS
           />
         )}
 
+        <HotThreads />
+
         {threadsLoading && <p className="panel-message">Loading discussions...</p>}
         {threadsError && <p className="panel-message panel-error">{threadsError}</p>}
 
@@ -504,7 +510,19 @@ export default function ThreadsPage({ user, token, courses, selectedCourse, setS
                   ) : (
                     <>
                       <div className="thread-message-bubble">
-                        <p>{DOMPurify.sanitize(activeThread?.body || '')}</p>
+                        {(activeThread?.body || '').length > 300 && !expandedBodies[activeThread?.id] ? (
+                          <>
+                            <p>{DOMPurify.sanitize((activeThread?.body || '').slice(0, 300))}...</p>
+                            <button type="button" className="see-more-toggle" onClick={() => setExpandedBodies((prev) => ({ ...prev, [activeThread.id]: true }))}>See more</button>
+                          </>
+                        ) : (
+                          <>
+                            <p>{DOMPurify.sanitize(activeThread?.body || '')}</p>
+                            {(activeThread?.body || '').length > 300 && (
+                              <button type="button" className="see-more-toggle" onClick={() => setExpandedBodies((prev) => ({ ...prev, [activeThread.id]: false }))}>See less</button>
+                            )}
+                          </>
+                        )}
                       </div>
                       {canManageThread && (
                         <div className="resource-actions">
@@ -539,7 +557,12 @@ export default function ThreadsPage({ user, token, courses, selectedCourse, setS
                   {activeThreadReplies.length === 0 && (
                     <p className="thread-replies-empty">No replies yet. Start the conversation below.</p>
                   )}
-                  {activeThreadReplies.map((reply) => (
+                  {activeThreadReplies.length > 3 && !showAllReplies[activeThreadId] && (
+                    <button type="button" className="see-more-toggle" onClick={() => setShowAllReplies((prev) => ({ ...prev, [activeThreadId]: true }))}>
+                      Show all {activeThreadReplies.length} replies
+                    </button>
+                  )}
+                  {(showAllReplies[activeThreadId] ? activeThreadReplies : activeThreadReplies.slice(0, 3)).map((reply) => (
                     <article className="thread-message thread-message-reply" key={reply.id}>
                       {reply.authorProfileImage ? (
                         <img src={`/uploads/${reply.authorProfileImage}`} alt="" className="avatar-img avatar-img-reply" />
@@ -577,7 +600,19 @@ export default function ThreadsPage({ user, token, courses, selectedCourse, setS
                         ) : (
                           <>
                             <div className="thread-message-bubble thread-message-bubble-reply">
-                              <p>{DOMPurify.sanitize(reply.body || '')}</p>
+                              {(reply.body || '').length > 300 && !expandedReplies[reply.id] ? (
+                                <>
+                                  <p>{DOMPurify.sanitize((reply.body || '').slice(0, 300))}...</p>
+                                  <button type="button" className="see-more-toggle" onClick={() => setExpandedReplies((prev) => ({ ...prev, [reply.id]: true }))}>See more</button>
+                                </>
+                              ) : (
+                                <>
+                                  <p>{DOMPurify.sanitize(reply.body || '')}</p>
+                                  {(reply.body || '').length > 300 && (
+                                    <button type="button" className="see-more-toggle" onClick={() => setExpandedReplies((prev) => ({ ...prev, [reply.id]: false }))}>See less</button>
+                                  )}
+                                </>
+                              )}
                             </div>
                             {canManageReply(reply) && (
                               <div className="resource-actions">
@@ -607,6 +642,11 @@ export default function ThreadsPage({ user, token, courses, selectedCourse, setS
                       </div>
                     </article>
                   ))}
+                  {activeThreadReplies.length > 3 && showAllReplies[activeThreadId] && (
+                    <button type="button" className="see-more-toggle" onClick={() => setShowAllReplies((prev) => ({ ...prev, [activeThreadId]: false }))}>
+                      Show less replies
+                    </button>
+                  )}
                 </div>
 
                 <form className="thread-reply-composer" onSubmit={handleReplySubmit}>

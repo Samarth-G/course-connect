@@ -19,6 +19,7 @@ export default function ResourcesPage({ user, token, courses, selectedCourse, se
   const [resourceEditForm, setResourceEditForm] = useState({ title: '', type: '', summary: '', resourceFile: null })
   const [resourceEditError, setResourceEditError] = useState('')
   const [resourceEditLoading, setResourceEditLoading] = useState(false)
+  const [expandedSummaries, setExpandedSummaries] = useState({})
 
   const activeCourse = courses.find((c) => c.id === selectedCourse) || courses[0] || null
 
@@ -388,7 +389,19 @@ export default function ResourcesPage({ user, token, courses, selectedCourse, se
                 <p>{activeResource.mimeType || 'Uploaded attachment'}</p>
               </div>
               <div className="resource-summary">
-                <p>{DOMPurify.sanitize(activeResource.summary || '')}</p>
+                {(activeResource.summary || '').length > 200 && !expandedSummaries[activeResource.id] ? (
+                  <>
+                    <p>{DOMPurify.sanitize((activeResource.summary || '').slice(0, 200))}...</p>
+                    <button type="button" className="see-more-toggle" onClick={() => setExpandedSummaries((prev) => ({ ...prev, [activeResource.id]: true }))}>See more</button>
+                  </>
+                ) : (
+                  <>
+                    <p>{DOMPurify.sanitize(activeResource.summary || '')}</p>
+                    {(activeResource.summary || '').length > 200 && (
+                      <button type="button" className="see-more-toggle" onClick={() => setExpandedSummaries((prev) => ({ ...prev, [activeResource.id]: false }))}>See less</button>
+                    )}
+                  </>
+                )}
               </div>
               {canManageActiveResource && editingResourceId === activeResource.id && (
                 <form className="resource-form" onSubmit={handleResourceUpdate}>
