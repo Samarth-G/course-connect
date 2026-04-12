@@ -2,9 +2,9 @@ import { MemoryRouter } from 'react-router-dom'
 import { render, screen } from '@testing-library/react'
 import Header from '../Header'
 
-jest.mock('../../contexts/socketContext', () => ({
-  useSocket: () => ({ notifications: [], clearNotifications: jest.fn() }),
-}))
+jest.mock('../NotificationBell', () => function MockNotificationBell() {
+  return <div data-testid="notification-bell" />
+})
 
 describe('Header', () => {
   test('shows sign in buttons', () => {
@@ -32,5 +32,15 @@ describe('Header', () => {
 
     expect(screen.getByRole('link', { name: 'Admin' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Logout' })).toBeInTheDocument()
+  })
+
+  test('shows notification bell for logged in users', () => {
+    render(
+      <MemoryRouter>
+        <Header user={{ name: 'User', role: 'user' }} onShowAuth={jest.fn()} onLogout={jest.fn()} />
+      </MemoryRouter>
+    )
+
+    expect(screen.getByTestId('notification-bell')).toBeInTheDocument()
   })
 })
