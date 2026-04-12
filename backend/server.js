@@ -1,10 +1,12 @@
 import { createServer } from "http";
 import { Server as SocketIOServer } from "socket.io";
+import jwt from "jsonwebtoken";
 import app from "./app.js";
 import "dotenv/config";
 import { connectDB } from "./config/db.js";
 import { seedDatabase } from "./services/seedDatabase.js";
 import { setIO } from "./socket.js";
+import { JWT_SECRET_KEY } from "./config/jwtConfig.js";
 
 const PORT = process.env.PORT || 5000;
 
@@ -32,6 +34,20 @@ async function startServer() {
 
     io.on("connection", (socket) => {
       console.log(`Socket connected: ${socket.id}`);
+
+      // Join user-specific room so we can target them directly
+      const token = socket.handshake.auth?.token;
+      if (token) {
+        try {
+          const payload = jwt.verify(token, JWT_SECRET_KEY);
+          if (payload?.sub) {
+            socket.join(`user:${payload.sub}`);
+          }
+        } catch {
+          // Invalid token — socket still connects but gets no personal room
+        }
+      }
+
       socket.on("disconnect", () => {
         console.log(`Socket disconnected: ${socket.id}`);
       });

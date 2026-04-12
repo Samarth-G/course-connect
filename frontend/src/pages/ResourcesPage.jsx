@@ -1,12 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import DOMPurify from 'dompurify'
 import Sidebar from '../components/Sidebar'
 import { useSocket } from '../contexts/socketContext'
 
 export default function ResourcesPage({ user, token, courses, selectedCourse, setSelectedCourse, openAuth }) {
-  const { socket, addNotification } = useSocket() || {}
-  const addNotificationRef = useRef(addNotification)
-  useEffect(() => { addNotificationRef.current = addNotification }, [addNotification])
+  const { socket } = useSocket() || {}
 
   const [resourceSearch, setResourceSearch] = useState('')
   const [resources, setResources] = useState([])
@@ -21,6 +19,7 @@ export default function ResourcesPage({ user, token, courses, selectedCourse, se
   const [resourceEditForm, setResourceEditForm] = useState({ title: '', type: '', summary: '', resourceFile: null })
   const [resourceEditError, setResourceEditError] = useState('')
   const [resourceEditLoading, setResourceEditLoading] = useState(false)
+  const [expandedSummaries, setExpandedSummaries] = useState({})
 
   async function parseApiResponse(response) {
     if (response.status === 413) {
@@ -77,7 +76,6 @@ export default function ResourcesPage({ user, token, courses, selectedCourse, se
         if (prev.some((existing) => existing.id === resource.id)) return prev
         return [resource, ...prev]
       })
-      addNotificationRef.current?.(`New resource: ${resource.title || 'Untitled'}`)
     }
 
     const handleResourceUpdated = (resource) => {
@@ -413,7 +411,19 @@ export default function ResourcesPage({ user, token, courses, selectedCourse, se
                 <p>{activeResource.mimeType || 'Uploaded attachment'}</p>
               </div>
               <div className="resource-summary">
-                <p>{DOMPurify.sanitize(activeResource.summary || '')}</p>
+                {(activeResource.summary || '').length > 200 && !expandedSummaries[activeResource.id] ? (
+                  <>
+                    <p>{DOMPurify.sanitize((activeResource.summary || '').slice(0, 200))}...</p>
+                    <button type="button" className="see-more-toggle" onClick={() => setExpandedSummaries((prev) => ({ ...prev, [activeResource.id]: true }))}>See more</button>
+                  </>
+                ) : (
+                  <>
+                    <p>{DOMPurify.sanitize(activeResource.summary || '')}</p>
+                    {(activeResource.summary || '').length > 200 && (
+                      <button type="button" className="see-more-toggle" onClick={() => setExpandedSummaries((prev) => ({ ...prev, [activeResource.id]: false }))}>See less</button>
+                    )}
+                  </>
+                )}
               </div>
               {canManageActiveResource && editingResourceId === activeResource.id && (
                 <form className="resource-form" onSubmit={handleResourceUpdate}>

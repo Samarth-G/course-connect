@@ -1,9 +1,8 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { useSocket } from '../contexts/socketContext'
+import NotificationBell from './NotificationBell'
 
 function Header({ user, onShowAuth, onLogout }) {
   const navigate = useNavigate()
-  const { notifications, clearNotifications } = useSocket() || {}
   const showAuthButtons = !user
 
   const avatarUrl = user?.profileImage
@@ -37,12 +36,6 @@ function Header({ user, onShowAuth, onLogout }) {
       </nav>
 
       <div className="topbar-right">
-        {notifications && notifications.length > 0 && (
-          <button type="button" className="notification-badge" onClick={clearNotifications} title="Clear notifications">
-            {notifications.length}
-          </button>
-        )}
-
         {showAuthButtons && (
           <>
             <button type="button" className="auth-chip" onClick={() => onShowAuth?.('login')}>
@@ -56,6 +49,7 @@ function Header({ user, onShowAuth, onLogout }) {
 
         {user && (
           <>
+            <NotificationBell />
             <button type="button" className="header-profile-btn" onClick={() => navigate('/profile')} title="View profile">
               {avatarUrl ? (
                 <img src={avatarUrl} alt={user.name} className="header-avatar-img" />

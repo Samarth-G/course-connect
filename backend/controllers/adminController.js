@@ -40,7 +40,12 @@ export async function toggleUserStatus(req, res) {
     }
 
     const io = getIO();
-    if (io) io.emit("user:toggled", user);
+    if (io) {
+      io.emit("user:toggled", user);
+      if (!user.enabled) {
+        io.to(`user:${user.id}`).emit("account:disabled");
+      }
+    }
 
     return res.status(200).json({ message: `User ${user.enabled ? "enabled" : "disabled"}`, user });
   } catch (error) {

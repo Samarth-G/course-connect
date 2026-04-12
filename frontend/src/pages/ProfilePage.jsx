@@ -9,6 +9,11 @@ export default function ProfilePage({ user, token, setUser }) {
   const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
 
+  const [history, setHistory] = useState([])
+  const [historyPage, setHistoryPage] = useState(1)
+  const [historyLoading, setHistoryLoading] = useState(false)
+  const [historyHasMore, setHistoryHasMore] = useState(true)
+
   const avatarUrl = user?.profileImage ? `/uploads/${user.profileImage}` : null
 
   useEffect(() => {
@@ -26,6 +31,27 @@ export default function ProfilePage({ user, token, setUser }) {
       socket.off('user:updated', handleUserUpdated)
     }
   }, [socket, user?.id, setUser])
+
+  useEffect(() => {
+    if (!user?.id || !token) return
+    loadHistory(1, true)
+  }, [user?.id, token])
+
+  async function loadHistory(page, reset = false) {
+    setHistoryLoading(true)
+    try {
+      const res = await fetch(`/api/analytics/user/${encodeURIComponent(user.id)}/history?page=${page}&limit=20`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const data = await res.json()
+      if (res.ok && Array.isArray(data.results)) {
+        setHistory((prev) => reset ? data.results : [...prev, ...data.results])
+        setHistoryPage(page)
+        setHistoryHasMore(data.results.length === 20)
+      }
+    } catch { /* ignore */ }
+    finally { setHistoryLoading(false) }
+  }
 
   const formatDate = (value) => {
     if (!value) return 'N/A'
@@ -133,6 +159,37 @@ export default function ProfilePage({ user, token, setUser }) {
         )}
 
         {success && <p className="panel-message profile-success">{success}</p>}
+      </div>
+
+      <div className="activity-history-section">
+        <h3>My Activity</h3>
+        {history.length === 0 && !historyLoading && (
+          <p className="panel-message">No activity yet.</p>
+        )}
+        <ul className="activity-history-list">
+          {history.map((item, idx) => (
+            <li key={`${item.type}-${item.threadId}-${idx}`} className="activity-history-item">
+              <span className="activity-history-type">{item.type}</span>
+              <div className="activity-history-content">
+                <strong>{item.type === 'thread' ? item.content : (item.threadTitle || 'Thread reply')}</strong>
+                {item.type === 'reply' && (
+                  <span style={{ fontSize: '0.78rem', color: '#555' }}>
+                    {(item.body || '').length > 100 ? item.body.slice(0, 100) + '...' : item.body}
+                  </span>
+                )}
+                <div className="activity-history-meta">
+                  {item.courseId} · {formatDate(item.createdAt)}
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+        {historyLoading && <p className="panel-message">Loading...</p>}
+        {!historyLoading && historyHasMore && history.length > 0 && (
+          <button type="button" className="new-thread-button" style={{ marginTop: 10 }} onClick={() => loadHistory(historyPage + 1)}>
+            Load more
+          </button>
+        )}
       </div>
     </section>
   )

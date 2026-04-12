@@ -4,7 +4,6 @@ import { SocketContext } from './socketContext.js'
 
 export function SocketProvider({ token, children }) {
   const [socket, setSocket] = useState(null)
-  const [notifications, setNotifications] = useState([])
   const socketRef = useRef(null)
 
   useEffect(() => {
@@ -50,14 +49,8 @@ export function SocketProvider({ token, children }) {
     }
   }, [token])
 
-  const addNotification = (msg) => {
-    setNotifications((prev) => [...prev, { id: Date.now(), message: msg }])
-  }
-
-  const clearNotifications = () => setNotifications([])
-
   return (
-    <SocketContext.Provider value={{ socket, notifications, addNotification, clearNotifications }}>
+    <SocketContext.Provider value={{ socket }}>
       {children}
     </SocketContext.Provider>
   )

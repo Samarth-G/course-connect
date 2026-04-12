@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useContext } from 'react'
 import { Routes, Route, useNavigate, Navigate } from 'react-router-dom'
 import Header from './components/Header'
 import Footer from './components/Footer'
@@ -9,9 +9,23 @@ import SessionsPage from './pages/SessionsPage'
 import ProfilePage from './pages/ProfilePage'
 import AdminDashboard from './pages/AdminDashboard'
 import { SocketProvider } from './contexts/SocketContext.jsx'
+import { SocketContext } from './contexts/socketContext.js'
+import { NotificationProvider } from './contexts/NotificationContext.jsx'
 import './App.css'
 
 const TOKEN_STORAGE_KEY = 'courseconnect_auth_token'
+
+function DisabledWatcher({ onDisabled }) {
+  const { socket } = useContext(SocketContext)
+
+  useEffect(() => {
+    if (!socket) return
+    socket.on('account:disabled', onDisabled)
+    return () => socket.off('account:disabled', onDisabled)
+  }, [socket, onDisabled])
+
+  return null
+}
 
 function AppInner() {
   const navigate = useNavigate()
@@ -27,6 +41,7 @@ function AppInner() {
 
   const [courses, setCourses] = useState([])
   const [selectedCourse, setSelectedCourse] = useState('')
+  const [showDisabledModal, setShowDisabledModal] = useState(false)
 
   // Restore session
   useEffect(() => {
@@ -112,6 +127,13 @@ function AppInner() {
     navigate('/', { replace: true })
   }
 
+  const handleDisabled = () => {
+    setShowDisabledModal(true)
+    localStorage.removeItem(TOKEN_STORAGE_KEY)
+    setToken('')
+    setUser(null)
+  }
+
   const openAuth = (mode) => {
     setAuthMode(mode)
     setShowAuthPanel(true)
@@ -123,6 +145,8 @@ function AppInner() {
 
   return (
     <SocketProvider token={token}>
+      <NotificationProvider user={user}>
+      <DisabledWatcher onDisabled={handleDisabled} />
       <div className="app-shell">
         <Header user={user} onShowAuth={openAuth} onLogout={handleLogout} />
 
@@ -225,7 +249,25 @@ function AppInner() {
             </div>
           </div>
         )}
+
+        {showDisabledModal && (
+          <div className="auth-overlay" role="alertdialog" aria-modal="true" aria-label="Account disabled">
+            <div className="auth-panel">
+              <h3>Account Disabled</h3>
+              <p>Your account has been disabled by an administrator. You have been logged out.</p>
+              <div className="auth-actions">
+                <button
+                  type="button"
+                  onClick={() => { setShowDisabledModal(false); navigate('/', { replace: true }) }}
+                >
+                  OK
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+      </NotificationProvider>
     </SocketProvider>
   )
 }
