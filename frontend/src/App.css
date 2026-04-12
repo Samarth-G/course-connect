@@ -1379,3 +1379,307 @@ a.nav-chip {
 .admin-edit-form textarea {
   resize: vertical;
 }
+
+/* ── See More / Collapsible Toggle ── */
+.see-more-toggle {
+  background: none;
+  border: none;
+  color: #4f46e5;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 0;
+  margin-top: 4px;
+}
+
+.see-more-toggle:hover {
+  text-decoration: underline;
+}
+
+/* ── Notification Bell ── */
+.notification-wrapper {
+  position: relative;
+}
+
+.notification-bell-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  font-size: 1.25rem;
+  padding: 4px 8px;
+  color: #2a2a2f;
+  line-height: 1;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -2px;
+  right: 0;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.notification-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 320px;
+  max-height: 380px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #d7d7dc;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  z-index: 1000;
+  padding: 0;
+}
+
+.notification-dropdown-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.notification-dropdown-header h4 {
+  margin: 0;
+  font-size: 0.88rem;
+}
+
+.notification-mark-read {
+  background: none;
+  border: none;
+  color: #4f46e5;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.notification-item {
+  padding: 10px 14px;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 0.82rem;
+  color: #333;
+  cursor: default;
+}
+
+.notification-item:last-child {
+  border-bottom: none;
+}
+
+.notification-item-unread {
+  background: #f0f4ff;
+}
+
+.notification-item-time {
+  font-size: 0.7rem;
+  color: #888;
+  margin-top: 2px;
+}
+
+.notification-empty {
+  padding: 20px 14px;
+  font-size: 0.82rem;
+  color: #888;
+  text-align: center;
+}
+
+/* ── Hot Threads ── */
+.hot-threads-section {
+  margin-bottom: 16px;
+  border: 1px solid #e0e0e5;
+  border-radius: 14px;
+  background: #fafafa;
+  padding: 14px;
+}
+
+.hot-threads-section h3 {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+}
+
+.hot-thread-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.hot-thread-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.82rem;
+  padding: 6px 8px;
+  background: #fff;
+  border: 1px solid #ececec;
+  border-radius: 8px;
+}
+
+.hot-thread-rank {
+  font-weight: 700;
+  color: #4f46e5;
+  min-width: 22px;
+  text-align: center;
+}
+
+.hot-thread-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.hot-thread-title {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hot-thread-meta {
+  font-size: 0.72rem;
+  color: #888;
+}
+
+.hot-thread-replies {
+  font-weight: 600;
+  color: #4f46e5;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+/* ── Activity Chart ── */
+.activity-chart-section {
+  margin-top: 24px;
+  border: 1px solid #e0e0e5;
+  border-radius: 14px;
+  background: #fafafa;
+  padding: 18px;
+}
+
+.activity-chart-section h3 {
+  margin: 0 0 12px;
+  font-size: 0.95rem;
+}
+
+.activity-chart-filters {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.activity-chart-filters label {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.activity-chart-filters input[type="date"] {
+  border: 1px solid #cfcfd4;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  background: #fff;
+}
+
+/* ── Admin Usage Reports ── */
+.admin-usage-section {
+  margin-top: 20px;
+}
+
+.admin-summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.admin-summary-card {
+  background: #fff;
+  border: 1px solid #e0e0e5;
+  border-radius: 12px;
+  padding: 14px;
+  text-align: center;
+}
+
+.admin-summary-card .summary-number {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #4f46e5;
+}
+
+.admin-summary-card .summary-label {
+  font-size: 0.78rem;
+  color: #666;
+  margin-top: 2px;
+}
+
+/* ── User Activity History ── */
+.activity-history-section {
+  margin-top: 24px;
+}
+
+.activity-history-section h3 {
+  margin: 0 0 12px;
+  font-size: 0.95rem;
+}
+
+.activity-history-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.activity-history-item {
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+  font-size: 0.82rem;
+}
+
+.activity-history-type {
+  font-weight: 700;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: #4f46e5;
+  background: #eef2ff;
+  padding: 2px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  align-self: flex-start;
+}
+
+.activity-history-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.activity-history-content strong {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.activity-history-meta {
+  font-size: 0.72rem;
+  color: #888;
+  margin-top: 2px;
+}
