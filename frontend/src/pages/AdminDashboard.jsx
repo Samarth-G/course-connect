@@ -1,7 +1,36 @@
 import { useCallback, useEffect, useState } from 'react'
 import DOMPurify from 'dompurify'
 import { useSocket } from '../contexts/socketContext'
-import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+
+const ADMIN_SERIES = [
+  { key: 'signups',   color: '#7c3aed', label: 'Signups'   },
+  { key: 'threads',   color: '#10b981', label: 'Threads'   },
+  { key: 'replies',   color: '#f59e0b', label: 'Replies'   },
+  { key: 'resources', color: '#ef4444', label: 'Resources' },
+  { key: 'sessions',  color: '#3b82f6', label: 'Sessions'  },
+]
+
+function AdminChartTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null
+  return (
+    <div className="activity-chart-tooltip">
+      <p className="activity-chart-tooltip-label">{label}</p>
+      {payload.map(({ name, value, color }) => (
+        <div key={name} className="activity-chart-tooltip-row">
+          <span style={{ color }}>{name}</span>
+          <strong>{value}</strong>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function formatAdminTick(dateStr) {
+  if (!dateStr) return ''
+  const [, m, d] = dateStr.split('-')
+  return `${m}/${d}`
+}
 
 export default function AdminDashboard({ user, token }) {
   const { socket } = useSocket() || {}
@@ -439,18 +468,42 @@ export default function AdminDashboard({ user, token }) {
         )}
 
         {!reportLoading && activityChart.length > 0 && (
-          <div style={{ width: '100%', height: 280 }}>
+          <div className="activity-chart-canvas" style={{ marginTop: 0, padding: '14px 0 4px' }}>
             <ResponsiveContainer>
-              <LineChart data={activityChart} margin={{ left: 0, right: 20, top: 5, bottom: 5 }}>
-                <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="signups" stroke="#4f46e5" strokeWidth={2} dot={false} name="Signups" />
-                <Line type="monotone" dataKey="threads" stroke="#10b981" strokeWidth={2} dot={false} name="Threads" />
-                <Line type="monotone" dataKey="replies" stroke="#f59e0b" strokeWidth={2} dot={false} name="Replies" />
-                <Line type="monotone" dataKey="resources" stroke="#ef4444" strokeWidth={2} dot={false} name="Resources" />
-                <Line type="monotone" dataKey="sessions" stroke="#8b5cf6" strokeWidth={2} dot={false} name="Sessions" />
+              <LineChart data={activityChart} margin={{ left: -10, right: 16, top: 4, bottom: 4 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e8e8ec" vertical={false} />
+                <XAxis
+                  dataKey="date"
+                  tickFormatter={formatAdminTick}
+                  tick={{ fontSize: 10, fill: '#888' }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  allowDecimals={false}
+                  tick={{ fontSize: 10, fill: '#888' }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={28}
+                />
+                <Tooltip content={<AdminChartTooltip />} />
+                <Legend
+                  iconType="circle"
+                  iconSize={8}
+                  wrapperStyle={{ fontSize: '0.78rem', paddingTop: '8px' }}
+                />
+                {ADMIN_SERIES.map(({ key, color, label }) => (
+                  <Line
+                    key={key}
+                    type="monotone"
+                    dataKey={key}
+                    name={label}
+                    stroke={color}
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 4, strokeWidth: 0 }}
+                  />
+                ))}
               </LineChart>
             </ResponsiveContainer>
           </div>

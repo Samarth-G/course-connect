@@ -1562,36 +1562,86 @@ a.nav-chip {
 /* ── Activity Chart ── */
 .activity-chart-section {
   margin-top: 24px;
-  border: 1px solid #e0e0e5;
+  border: 1px solid #d7d7dc;
   border-radius: 14px;
-  background: #fafafa;
-  padding: 18px;
+  background: #f7f7f7;
+  overflow: hidden;
+}
+
+.activity-chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e8e8ec;
+  background: #f2f2f2;
 }
 
 .activity-chart-section h3 {
-  margin: 0 0 12px;
-  font-size: 0.95rem;
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #5d5d65;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
 }
 
 .activity-chart-filters {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
-  margin-bottom: 14px;
   flex-wrap: wrap;
 }
 
 .activity-chart-filters label {
-  font-size: 0.8rem;
+  font-size: 0.76rem;
   font-weight: 600;
+  color: #66666d;
 }
 
 .activity-chart-filters input[type="date"] {
   border: 1px solid #cfcfd4;
   border-radius: 8px;
-  padding: 6px 10px;
-  font-size: 0.8rem;
+  padding: 5px 9px;
+  font-size: 0.76rem;
   background: #fff;
+  color: #2c2c2f;
+}
+
+.activity-chart-canvas {
+  width: 100%;
+  height: 230px;
+  padding: 12px 14px 8px;
+}
+
+.activity-chart-message {
+  padding: 14px 18px;
+}
+
+.activity-chart-tooltip {
+  background: #fff;
+  border: 1px solid #d7d7dc;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.8rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+.activity-chart-tooltip-label {
+  margin: 0 0 6px;
+  font-weight: 600;
+  color: #2c2c2f;
+  font-size: 0.76rem;
+}
+
+.activity-chart-tooltip-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 3px;
+  font-size: 0.76rem;
 }
 
 /* ── Admin Usage Reports ── */
