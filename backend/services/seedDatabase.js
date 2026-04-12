@@ -3,7 +3,6 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import Course from "../models/courseModel.js";
 import Thread from "../models/threadModel.js";
-import User from "../models/userModel.js";
 import Resource from "../models/resourceModel.js";
 import Session from "../models/sessionModel.js";
 import { findUserByEmail, createUser } from "../repositories/authRepository.js";
@@ -33,6 +32,148 @@ async function loadSeedResources() {
   const filePath = fileURLToPath(RESOURCES_FILE_URL);
   const rawResources = await readFile(filePath, "utf8");
   return JSON.parse(rawResources);
+}
+
+async function seedReplies(demoUser) {
+  function daysAgoDate(n, hour = 10) {
+    const d = new Date();
+    d.setDate(d.getDate() - n);
+    d.setHours(hour, 0, 0, 0);
+    return d;
+  }
+
+  const replySeedData = [
+    {
+      courseId: "COSC-222",
+      threadTitle: "Complete guide to tree traversal for the midterm",
+      replies: [
+        {
+          body: "Really helpful overview! One thing I'd add: when converting recursive DFS to iterative using an explicit stack, remember to push the right child before the left so the left gets processed first.",
+          authorName: "Priya",
+          daysAgo: 14,
+          hour: 11,
+        },
+        {
+          body: "One trick that really helped me: for in-order traversal on a BST, just think of reading the tree from left to right, the values come out in ascending sorted order every time. For post-order, think leaves-first, which makes it perfect for freeing memory or evaluating expression trees where you need both children's values before the parent. When converting recursive DFS to iterative, the key insight is that the call stack is literally replaced by an explicit stack data structure, push root, then on each iteration pop a node, process it, and push its children in reverse order so the left child is processed first. This pattern works for all three DFS variants with minor tweaks.",
+          authorName: "Maya",
+          daysAgo: 13,
+          hour: 14,
+        },
+      ],
+    },
+    {
+      courseId: "COSC-222",
+      threadTitle: "Midterm 2 study group, anyone else finding it tough?",
+      replies: [
+        {
+          body: "Same here, the graph section alone covers Dijkstra, Bellman-Ford, and Floyd-Warshall, each with different time complexities and use cases. Dijkstra runs in O((V+E) log V) with a min-heap and only works on non-negative edge weights; Bellman-Ford handles negative weights in O(VE) and can detect negative cycles; Floyd-Warshall computes all-pairs shortest paths in O(V³). For dynamic programming, the real trick is identifying the subproblem structure before writing any code, draw the table first, fill in your base cases, then reason about the recurrence relation. Happy to share my comparison notes if anyone wants them.",
+          authorName: "Alex",
+          daysAgo: 4,
+          hour: 9,
+        },
+        {
+          body: "DP clicked for me once I started drawing the memoization table by hand for every problem. Define your base cases in the first row and column, then fill row by row. Once you nail coin change and longest common subsequence, most other DP problems follow the same structure.",
+          authorName: "Priya",
+          daysAgo: 4,
+          hour: 13,
+        },
+        {
+          body: "Office hours the day before the midterm are really useful, the prof walks through a past exam question in detail. I would strongly recommend going if you can make it.",
+          authorName: "Jordan",
+          daysAgo: 4,
+          hour: 10,
+        },
+        {
+          body: "For Dijkstra I draw out the priority queue state after each relaxation step. Seeing which node gets settled and when makes the algorithm click way faster than just reading pseudocode. The worked example in the lecture slides is also cleaner than the textbook one.",
+          authorName: "Maya",
+          daysAgo: 3,
+          hour: 16,
+        },
+        {
+          body: "Study group this weekend? We could split the material (graphs, DP, and sorting algorithms) and each teach one section to the rest. Reply here if you're interested and we can sort out a time.",
+          authorName: "Casey",
+          daysAgo: 2,
+          hour: 18,
+        },
+      ],
+    },
+    {
+      courseId: "COSC-222",
+      threadTitle: "Need help studying for MT1",
+      replies: [
+        {
+          body: "Focus on chapters 3-5, stacks, queues, and linked lists. The prof mentioned those will be the biggest sections on MT1.",
+          authorName: "Jordan",
+          daysAgo: 21,
+          hour: 11,
+        },
+        {
+          body: "Also review time complexity analysis. Make sure you can derive Big O for nested loops without just memorising, the midterm usually has at least one derivation question.",
+          authorName: "Maya",
+          daysAgo: 20,
+          hour: 15,
+        },
+      ],
+    },
+    {
+      courseId: "PHYS-215",
+      threadTitle: "Entropy intuition help",
+      replies: [
+        {
+          body: "Think of entropy as counting the number of ways energy can be distributed across a system. More disorder means more possible microstates, which means higher entropy. The Second Law just says that in an isolated system, the total number of accessible microstates can only stay the same or increase, never decrease. That framing helped me far more than the formula alone.",
+          authorName: "Casey",
+          daysAgo: 10,
+          hour: 12,
+        },
+      ],
+    },
+    {
+      courseId: "BIOL-117",
+      threadTitle: "Natural selection practice",
+      replies: [
+        {
+          body: "Khan Academy has a solid set of natural selection practice problems with worked solutions. Also check your textbook's end-of-chapter questions, there are usually 3-4 good ones on adaptation and fitness trade-offs.",
+          authorName: "Taylor",
+          daysAgo: 10,
+          hour: 14,
+        },
+      ],
+    },
+  ];
+
+  let totalAdded = 0;
+
+  for (const seed of replySeedData) {
+    const thread = await Thread.findOne({ courseId: seed.courseId, title: seed.threadTitle });
+    if (!thread) continue;
+
+    const existingPrefixes = new Set(
+      thread.replies.map((r) => r.body.slice(0, 40).toLowerCase())
+    );
+
+    const newReplies = seed.replies
+      .filter((r) => !existingPrefixes.has(r.body.slice(0, 40).toLowerCase()))
+      .map((r) => ({
+        body: r.body,
+        authorId: demoUser.id,
+        authorName: r.authorName,
+        createdAt: daysAgoDate(r.daysAgo, r.hour),
+      }));
+
+    if (newReplies.length === 0) continue;
+
+    await Thread.updateOne(
+      { _id: thread._id },
+      { $push: { replies: { $each: newReplies } } }
+    );
+    totalAdded += newReplies.length;
+  }
+
+  if (totalAdded > 0) {
+    console.log(`Seeded ${totalAdded} thread repl${totalAdded === 1 ? "y" : "ies"}`);
+  } else {
+    console.log("No new thread replies to seed");
+  }
 }
 
 export async function seedDatabase() {
@@ -247,4 +388,6 @@ export async function seedDatabase() {
   } else {
     console.log("No new study sessions to seed for current week");
   }
+
+  await seedReplies(demoUser);
 }

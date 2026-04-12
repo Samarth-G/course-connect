@@ -21,9 +21,12 @@ const replySchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
   },
   {
-    timestamps: { createdAt: true, updatedAt: false },
     versionKey: false,
     toJSON: {
       transform(_doc, ret) {
