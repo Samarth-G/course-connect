@@ -14,6 +14,7 @@ import { NotificationProvider } from './contexts/NotificationContext.jsx'
 import './App.css'
 
 const TOKEN_STORAGE_KEY = 'courseconnect_auth_token'
+const SELECTED_COURSE_STORAGE_KEY = 'courseconnect_selected_course'
 
 function DisabledWatcher({ onDisabled }) {
   const { socket } = useContext(SocketContext)
@@ -40,8 +41,38 @@ function AppInner() {
   const [sessionLoading, setSessionLoading] = useState(Boolean(token))
 
   const [courses, setCourses] = useState([])
-  const [selectedCourse, setSelectedCourse] = useState('')
+  const [selectedCourse, setSelectedCourse] = useState(() => localStorage.getItem(SELECTED_COURSE_STORAGE_KEY) || '')
   const [showDisabledModal, setShowDisabledModal] = useState(false)
+
+  useEffect(() => {
+    async function loadCourses() {
+      try {
+        const response = await fetch('/api/courses')
+        const data = await response.json()
+        if (!response.ok) return
+
+        const nextCourses = Array.isArray(data.results) ? data.results : []
+        setCourses(nextCourses)
+        setSelectedCourse((prev) => {
+          if (nextCourses.length === 0) return ''
+          const existing = nextCourses.some((course) => course.id === prev)
+          return existing ? prev : nextCourses[0].id
+        })
+      } catch {
+        // Leave the existing course state alone; the page-level fetch can recover.
+      }
+    }
+
+    loadCourses()
+  }, [])
+
+  useEffect(() => {
+    if (selectedCourse) {
+      localStorage.setItem(SELECTED_COURSE_STORAGE_KEY, selectedCourse)
+    } else {
+      localStorage.removeItem(SELECTED_COURSE_STORAGE_KEY)
+    }
+  }, [selectedCourse])
 
   // Restore session
   useEffect(() => {

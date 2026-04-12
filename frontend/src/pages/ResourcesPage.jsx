@@ -5,6 +5,7 @@ import { useSocket } from '../contexts/socketContext'
 
 export default function ResourcesPage({ user, token, courses, selectedCourse, setSelectedCourse, openAuth }) {
   const { socket } = useSocket() || {}
+  const [availableCourses, setAvailableCourses] = useState(courses)
 
   const [resourceSearch, setResourceSearch] = useState('')
   const [resources, setResources] = useState([])
@@ -43,7 +44,39 @@ export default function ResourcesPage({ user, token, courses, selectedCourse, se
     }
   }
 
-  const activeCourse = courses.find((c) => c.id === selectedCourse) || courses[0] || null
+  useEffect(() => {
+    setAvailableCourses(courses)
+  }, [courses])
+
+  useEffect(() => {
+    if (courses.length > 0) return
+
+    let cancelled = false
+
+    async function loadCourseCatalog() {
+      try {
+        const response = await fetch('/api/courses')
+        const data = await response.json()
+        if (!response.ok || cancelled) return
+
+        const nextCourses = Array.isArray(data.results) ? data.results : []
+        setAvailableCourses(nextCourses)
+        if (!selectedCourse && nextCourses[0]?.id) {
+          setSelectedCourse(nextCourses[0].id)
+        }
+      } catch {
+        // Keep the existing UI state; page-specific data fetches can recover.
+      }
+    }
+
+    loadCourseCatalog()
+
+    return () => {
+      cancelled = true
+    }
+  }, [courses, selectedCourse, setSelectedCourse])
+
+  const activeCourse = availableCourses.find((c) => c.id === selectedCourse) || availableCourses[0] || null
 
   useEffect(() => {
     if (!selectedCourse) {
@@ -339,7 +372,7 @@ export default function ResourcesPage({ user, token, courses, selectedCourse, se
         items={resourceSidebarItems}
         activeItemId={activeResource?.id || ''}
         onSelectItem={setActiveResourceId}
-        courses={courses}
+        courses={availableCourses}
         selectedCourse={selectedCourse}
         onSelectCourse={setSelectedCourse}
       />

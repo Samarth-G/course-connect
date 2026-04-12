@@ -11,14 +11,12 @@ export default function ActivityChart({ token }) {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (!token) return
     async function fetchActivity() {
       setLoading(true)
       try {
         const params = new URLSearchParams({ startDate, endDate })
-        const res = await fetch(`/api/analytics/activity?${params}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
+        const headers = token ? { Authorization: `Bearer ${token}` } : undefined
+        const res = await fetch(`/api/analytics/activity?${params}`, headers ? { headers } : undefined)
         const data = await res.json()
         if (!res.ok) return
 
@@ -40,8 +38,6 @@ export default function ActivityChart({ token }) {
     }
     fetchActivity()
   }, [token, startDate, endDate])
-
-  if (!token) return null
 
   return (
     <div className="activity-chart-section">

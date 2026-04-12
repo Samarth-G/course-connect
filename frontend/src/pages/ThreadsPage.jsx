@@ -7,6 +7,7 @@ import { useSocket } from '../contexts/socketContext'
 
 export default function ThreadsPage({ user, token, courses, selectedCourse, setSelectedCourse, openAuth }) {
   const { socket } = useSocket() || {}
+  const [availableCourses, setAvailableCourses] = useState(courses)
 
   const [threadSearch, setThreadSearch] = useState('')
   const [threads, setThreads] = useState([])
@@ -29,7 +30,39 @@ export default function ThreadsPage({ user, token, courses, selectedCourse, setS
   const [showAllReplies, setShowAllReplies] = useState({})
   const [expandedReplies, setExpandedReplies] = useState({})
 
-  const activeCourse = courses.find((c) => c.id === selectedCourse) || courses[0] || null
+  useEffect(() => {
+    setAvailableCourses(courses)
+  }, [courses])
+
+  useEffect(() => {
+    if (courses.length > 0) return
+
+    let cancelled = false
+
+    async function loadCourseCatalog() {
+      try {
+        const response = await fetch('/api/courses')
+        const data = await response.json()
+        if (!response.ok || cancelled) return
+
+        const nextCourses = Array.isArray(data.results) ? data.results : []
+        setAvailableCourses(nextCourses)
+        if (!selectedCourse && nextCourses[0]?.id) {
+          setSelectedCourse(nextCourses[0].id)
+        }
+      } catch {
+        // Keep the existing UI state; page-specific data fetches can recover.
+      }
+    }
+
+    loadCourseCatalog()
+
+    return () => {
+      cancelled = true
+    }
+  }, [courses, selectedCourse, setSelectedCourse])
+
+  const activeCourse = availableCourses.find((c) => c.id === selectedCourse) || availableCourses[0] || null
   const activeThread = threads.find((t) => t.id === activeThreadId) || null
   const activeThreadReplies = Array.isArray(activeThread?.replies) ? activeThread.replies : []
 
@@ -409,7 +442,7 @@ export default function ThreadsPage({ user, token, courses, selectedCourse, setS
         items={courseThreadList.map((t) => ({ id: t.id, label: t.title }))}
         activeItemId={activeThreadId}
         onSelectItem={setActiveThreadId}
-        courses={courses}
+        courses={availableCourses}
         selectedCourse={selectedCourse}
         onSelectCourse={setSelectedCourse}
       />

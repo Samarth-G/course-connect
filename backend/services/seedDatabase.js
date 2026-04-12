@@ -15,6 +15,44 @@ const ADMIN_USER_PASSWORD = "Admin123!";
 const COURSES_FILE_URL = new URL("../data/courses.json", import.meta.url);
 const THREADS_FILE_URL = new URL("../data/threads.json", import.meta.url);
 const RESOURCES_FILE_URL = new URL("../data/resources.json", import.meta.url);
+const SEEDED_AUTHOR_EMAIL_DOMAIN = "courseconnect.seed.local";
+
+function slugifyName(name) {
+  return String(name ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ".")
+    .replace(/^\.+|\.+$/g, "")
+    .slice(0, 48) || "seed.user";
+}
+
+function toSeedAuthorEmail(name) {
+  return `${slugifyName(name)}@${SEEDED_AUTHOR_EMAIL_DOMAIN}`;
+}
+
+async function ensureSeedUserByName(name, cache) {
+  const normalizedName = String(name ?? "").trim();
+  if (!normalizedName) {
+    return null;
+  }
+
+  if (cache.has(normalizedName)) {
+    return cache.get(normalizedName);
+  }
+
+  const email = toSeedAuthorEmail(normalizedName);
+  let user = await findUserByEmail(email);
+  if (!user) {
+    user = await createUser({
+      name: normalizedName,
+      email,
+      passwordHash: await bcrypt.hash(DEMO_USER_PASSWORD, 10),
+    });
+  }
+
+  cache.set(normalizedName, user);
+  return user;
+}
 
 async function loadSeedCourses() {
   const filePath = fileURLToPath(COURSES_FILE_URL);
@@ -141,6 +179,8 @@ async function seedReplies(demoUser) {
     },
   ];
 
+  const authorUserCache = new Map();
+  authorUserCache.set(demoUser.name, demoUser);
   let totalAdded = 0;
 
   for (const seed of replySeedData) {
@@ -151,14 +191,20 @@ async function seedReplies(demoUser) {
       thread.replies.map((r) => r.body.slice(0, 40).toLowerCase())
     );
 
-    const newReplies = seed.replies
-      .filter((r) => !existingPrefixes.has(r.body.slice(0, 40).toLowerCase()))
-      .map((r) => ({
-        body: r.body,
-        authorId: demoUser.id,
-        authorName: r.authorName,
-        createdAt: daysAgoDate(r.daysAgo, r.hour),
-      }));
+    const newReplies = [];
+    for (const reply of seed.replies) {
+      if (existingPrefixes.has(reply.body.slice(0, 40).toLowerCase())) {
+        continue;
+      }
+      const authorUser = await ensureSeedUserByName(reply.authorName, authorUserCache);
+      newReplies.push({
+        body: reply.body,
+        authorId: String(authorUser?.id ?? demoUser.id),
+        authorName: reply.authorName,
+        authorProfileImage: String(authorUser?.profileImage ?? ""),
+        createdAt: daysAgoDate(reply.daysAgo, reply.hour),
+      });
+    }
 
     if (newReplies.length === 0) continue;
 
@@ -173,6 +219,75 @@ async function seedReplies(demoUser) {
     console.log(`Seeded ${totalAdded} thread repl${totalAdded === 1 ? "y" : "ies"}`);
   } else {
     console.log("No new thread replies to seed");
+  }
+}
+
+async function normalizeExistingContentOwnership(demoUser) {
+  const authorUserCache = new Map();
+  authorUserCache.set(String(demoUser.name), demoUser);
+
+  let normalizedThreadCount = 0;
+  let normalizedReplyCount = 0;
+  let normalizedResourceCount = 0;
+  let normalizedSessionCount = 0;
+
+  const threads = await Thread.find({});
+  for (const thread of threads) {
+    let hasChanges = false;
+    const threadAuthor = await ensureSeedUserByName(thread.authorName, authorUserCache);
+    const threadAuthorId = String(threadAuthor?.id ?? demoUser.id);
+
+    if (String(thread.authorId ?? "") !== threadAuthorId) {
+      thread.authorId = threadAuthorId;
+      hasChanges = true;
+      normalizedThreadCount += 1;
+    }
+
+    if (Array.isArray(thread.replies) && thread.replies.length > 0) {
+      for (const reply of thread.replies) {
+        const replyAuthor = await ensureSeedUserByName(reply.authorName, authorUserCache);
+        const replyAuthorId = String(replyAuthor?.id ?? demoUser.id);
+        if (String(reply.authorId ?? "") !== replyAuthorId) {
+          reply.authorId = replyAuthorId;
+          reply.authorProfileImage = String(replyAuthor?.profileImage ?? "");
+          hasChanges = true;
+          normalizedReplyCount += 1;
+        }
+      }
+    }
+
+    if (hasChanges) {
+      await thread.save();
+    }
+  }
+
+  const resources = await Resource.find({});
+  for (const resource of resources) {
+    const uploaderUser = await ensureSeedUserByName(resource.uploader, authorUserCache);
+    const uploaderId = String(uploaderUser?.id ?? demoUser.id);
+    if (String(resource.uploaderId ?? "") !== uploaderId) {
+      resource.uploaderId = uploaderId;
+      await resource.save();
+      normalizedResourceCount += 1;
+    }
+  }
+
+  const sessions = await Session.find({});
+  for (const session of sessions) {
+    const authorUser = await ensureSeedUserByName(session.authorName, authorUserCache);
+    const authorId = String(authorUser?.id ?? demoUser.id);
+    if (String(session.authorId ?? "") !== authorId) {
+      session.authorId = authorId;
+      session.authorProfileImage = String(authorUser?.profileImage ?? "");
+      await session.save();
+      normalizedSessionCount += 1;
+    }
+  }
+
+  if (normalizedThreadCount || normalizedReplyCount || normalizedResourceCount || normalizedSessionCount) {
+    console.log(
+      `Normalized ownership: ${normalizedThreadCount} thread(s), ${normalizedReplyCount} repl${normalizedReplyCount === 1 ? "y" : "ies"}, ${normalizedResourceCount} resource(s), ${normalizedSessionCount} session(s)`
+    );
   }
 }
 
@@ -241,6 +356,8 @@ export async function seedDatabase() {
   }
 
   const seedThreads = await loadSeedThreads();
+  const authorUserCache = new Map();
+  authorUserCache.set(String(demoUser.name), demoUser);
   const existingThreads = await findThreadsByCourseAndTitlePairs(
     seedThreads.map((thread) => ({
       courseId: thread.courseId,
@@ -266,6 +383,12 @@ export async function seedDatabase() {
       tags: Array.isArray(thread.tags) ? thread.tags : [],
       createdAt: thread.createdAt ? new Date(thread.createdAt) : new Date(),
     }));
+
+  for (const threadDocument of threadDocuments) {
+    const authorUser = await ensureSeedUserByName(threadDocument.authorName, authorUserCache);
+    threadDocument.authorId = String(authorUser?.id ?? demoUser.id);
+    threadDocument.authorProfileImage = String(authorUser?.profileImage ?? "");
+  }
 
   if (threadDocuments.length > 0) {
     await insertManyThreads(threadDocuments);
@@ -304,6 +427,11 @@ export async function seedDatabase() {
       createdAt: resource.createdAt ? new Date(resource.createdAt) : new Date(),
     }));
 
+  for (const resourceDocument of resourceDocuments) {
+    const uploaderUser = await ensureSeedUserByName(resourceDocument.uploader, authorUserCache);
+    resourceDocument.uploaderId = String(uploaderUser?.id ?? demoUser.id);
+  }
+
   if (resourceDocuments.length > 0) {
     await Resource.insertMany(resourceDocuments);
     console.log(`Seeded ${resourceDocuments.length} resource(s)`);
@@ -338,37 +466,43 @@ export async function seedDatabase() {
       title: "COSC 320 Midterm Review",
       startAt: buildDateTime(1, 16, 0),
       endAt: buildDateTime(1, 17, 30),
+      authorName: "Jordan",
     },
     {
       room: "Room 117",
       title: "Algorithms Practice",
       startAt: buildDateTime(2, 18, 0),
       endAt: buildDateTime(2, 19, 30),
+      authorName: "Maya",
     },
     {
       room: "Room 204",
       title: "Database Project Work",
       startAt: buildDateTime(3, 17, 0),
       endAt: buildDateTime(3, 18, 0),
+      authorName: "Alex",
     },
     {
       room: "Room 312",
       title: "Group Assignment Sync",
       startAt: buildDateTime(4, 19, 0),
       endAt: buildDateTime(4, 20, 0),
+      authorName: "Priya",
     },
     {
       room: "Room 204",
       title: "Final Exam Q&A",
       startAt: buildDateTime(5, 16, 30),
       endAt: buildDateTime(5, 18, 0),
+      authorName: "Casey",
     },
-  ].map((session) => ({
-    ...session,
-    authorId: demoUser.id,
-    authorName: demoUser.name,
-    authorProfileImage: demoUser.profileImage || "",
-  }));
+  ];
+
+  for (const session of demoSessions) {
+    const sessionAuthorUser = await ensureSeedUserByName(session.authorName, authorUserCache);
+    session.authorId = String(sessionAuthorUser?.id ?? demoUser.id);
+    session.authorProfileImage = String(sessionAuthorUser?.profileImage ?? "");
+  }
 
   const existingWeekSessions = await Session.find(
     {
@@ -388,6 +522,8 @@ export async function seedDatabase() {
   } else {
     console.log("No new study sessions to seed for current week");
   }
+
+  await normalizeExistingContentOwnership(demoUser);
 
   await seedReplies(demoUser);
 }

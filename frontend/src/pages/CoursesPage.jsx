@@ -298,7 +298,7 @@ export default function CoursesPage({ user, token, courses, setCourses, setSelec
         </div>
       </section>
 
-      {user && <ActivityChart token={token} />}
+      <ActivityChart token={token} />
     </section>
   )
 }
