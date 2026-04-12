@@ -10,6 +10,7 @@ import ProfilePage from './pages/ProfilePage'
 import AdminDashboard from './pages/AdminDashboard'
 import { SocketProvider } from './contexts/SocketContext.jsx'
 import { SocketContext } from './contexts/socketContext.js'
+import { NotificationProvider } from './contexts/NotificationContext.jsx'
 import './App.css'
 
 const TOKEN_STORAGE_KEY = 'courseconnect_auth_token'
@@ -144,6 +145,7 @@ function AppInner() {
 
   return (
     <SocketProvider token={token}>
+      <NotificationProvider user={user}>
       <DisabledWatcher onDisabled={handleDisabled} />
       <div className="app-shell">
         <Header user={user} onShowAuth={openAuth} onLogout={handleLogout} />
@@ -265,6 +267,7 @@ function AppInner() {
           </div>
         )}
       </div>
+      </NotificationProvider>
     </SocketProvider>
   )
 }

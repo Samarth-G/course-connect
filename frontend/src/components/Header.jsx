@@ -1,4 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom'
+import NotificationBell from './NotificationBell'
 
 function Header({ user, onShowAuth, onLogout }) {
   const navigate = useNavigate()
@@ -48,6 +49,7 @@ function Header({ user, onShowAuth, onLogout }) {
 
         {user && (
           <>
+            <NotificationBell />
             <button type="button" className="header-profile-btn" onClick={() => navigate('/profile')} title="View profile">
               {avatarUrl ? (
                 <img src={avatarUrl} alt={user.name} className="header-avatar-img" />
